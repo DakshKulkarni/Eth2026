@@ -59,4 +59,8 @@ Read on 2026-11-05. Items marked UNRESOLVED need a human decision or a first liv
 
 ## Meta Quest / Unity
 
-- Unity project currently has only URP, Input System and built-in modules. No Meta XR SDK, no Newtonsoft JSON, no glTFast installed.- UNRESOLVED until the SDK is installed (brief 6.1 step 3): Building Block names, `OVRCameraRig` anchor member names, `OVRInput` button names. Read them from `Library/PackageCache` after install.
+- Unity project currently has only URP, Input System and built-in modules. No Meta XR SDK, no Newtonsoft JSON, no glTFast installed.- Installed 2026-11-06: Unity 6000.3.28f1, `com.meta.xr.sdk.all` 207.0.1 (core, interaction, audio, haptics, platform, voice, mrutilitykit), Newtonsoft 3.2.2, glTFast 6.20.0. Unity also added `com.unity.xr.openxr` 1.16.1. Editor log showed 0 compile errors after import.
+- Quest build quirk: with Unity OpenXR (`com.unity.xr.openxr`) plus Meta XR SDK, Gradle fails with "2 files found with path lib/arm64-v8a/libopenxr_loader.so" (OVRPlugin vs openxr_loader) unless **Meta XR Feature** is enabled for Android under Project Settings > XR Plug-in Management > OpenXR. Meta's `OVRGradleGeneration.cs` then excludes the other loader from the build. The asset showed `MetaXRFeature Android` disabled by default.
+- Building Block names (menu labels): "Camera Rig", "Passthrough", "Controller Tracking", "Hand Tracking". Block data lives in `com.meta.xr.sdk.core/Editor/BuildingBlocks/BlockData`.
+- `OVRCameraRig` (read-only Transform properties): `trackingSpace`, `centerEyeAnchor`, `leftHandAnchor`, `rightHandAnchor`, `leftControllerAnchor`, `rightControllerAnchor` (plus Detached hand variants).
+- `OVRInput.Button`: `PrimaryIndexTrigger` and `PrimaryHandTrigger` map to the controller named in the call (use `OVRInput.Controller.RTouch` for the right index trigger, `LTouch` for the left grip). `One`, `Two`, `Three`, `Four` map to A, B, X, Y.

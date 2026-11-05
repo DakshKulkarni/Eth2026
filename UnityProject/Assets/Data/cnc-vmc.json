@@ -1,0 +1,189 @@
+{
+  "id": "cnc-vmc",
+  "name": "CNC Vertical Machining Center: start-up, set-up and run",
+  "version": "1.0.0",
+  "hintLimit": 3,
+  "stages": [
+    { "id": 1, "title": "Power-up and home" },
+    { "id": 2, "title": "Set-up" },
+    { "id": 3, "title": "Run" }
+  ],
+  "steps": [
+    {
+      "id": "s1_isolator", "stage": 1, "title": "Main isolator ON",
+      "spokenInstruction": "Turn the main isolator switch to ON.",
+      "rationale": "The isolator connects the machine to mains power. Nothing works without it.",
+      "targetControl": "isolator",
+      "expectedAction": { "control": "isolator", "action": "set", "value": "on" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s1_estop", "stage": 1, "title": "Release E-STOP",
+      "spokenInstruction": "Release the red emergency stop button.",
+      "rationale": "The machine cannot power up while the emergency stop is pressed in.",
+      "targetControl": "estop",
+      "expectedAction": { "control": "estop", "action": "set", "value": "released" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s1_power", "stage": 1, "title": "Power ON",
+      "spokenInstruction": "Press the green POWER button.",
+      "rationale": "This starts the control system and the axis drives.",
+      "targetControl": "power_btn",
+      "expectedAction": { "control": "power_btn", "action": "set", "value": "on" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s1_isolator", "s1_estop"]
+    },
+    {
+      "id": "s1_mode_home", "stage": 1, "title": "Select HOME mode",
+      "spokenInstruction": "Turn the mode selector to HOME.",
+      "rationale": "Homing is only possible in HOME mode.",
+      "targetControl": "mode_selector",
+      "expectedAction": { "control": "mode_selector", "action": "set", "value": "HOME" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s1_power"]
+    },
+    {
+      "id": "s1_home_z", "stage": 1, "title": "Home Z first",
+      "spokenInstruction": "Press HOME Z. The spindle will rise to its top position.",
+      "rationale": "Z must go first so the tool is lifted clear before the table moves.",
+      "targetControl": "home_z",
+      "expectedAction": { "control": "home_z", "action": "press", "value": "" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s1_mode_home"]
+    },
+    {
+      "id": "s1_home_xy", "stage": 1, "title": "Home X and Y",
+      "spokenInstruction": "Now press HOME XY. The table will move to its home position.",
+      "rationale": "Homing XY before Z can drag the tool across the table and crash it.",
+      "targetControl": "home_xy",
+      "expectedAction": { "control": "home_xy", "action": "press", "value": "" },
+      "checkpoint": true, "mode": "both", "forbiddenBefore": ["s1_home_z"]
+    },
+    {
+      "id": "s2_tool", "stage": 2, "title": "Select tool T1",
+      "spokenInstruction": "Press TOOL until T1 is selected.",
+      "rationale": "The program expects tool T1 in the spindle.",
+      "targetControl": "tool_select",
+      "expectedAction": { "control": "tool_select", "action": "set", "value": "T1" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s2_open_door", "stage": 2, "title": "Open the door",
+      "spokenInstruction": "Open the machine door.",
+      "rationale": "You need access to the table to load the part.",
+      "targetControl": "door",
+      "expectedAction": { "control": "door", "action": "set", "value": "open" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s2_place", "stage": 2, "title": "Place the workpiece",
+      "spokenInstruction": "Place the workpiece in the vise.",
+      "rationale": "The part sits on the table between the vise jaws.",
+      "targetControl": "workpiece",
+      "expectedAction": { "control": "workpiece", "action": "set", "value": "placed" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s2_open_door"]
+    },
+    {
+      "id": "s2_clamp", "stage": 2, "title": "Clamp the workpiece",
+      "spokenInstruction": "Turn the clamp handle to lock the workpiece.",
+      "rationale": "An unclamped part can be thrown out of the machine during cutting.",
+      "targetControl": "clamp_handle",
+      "expectedAction": { "control": "clamp_handle", "action": "set", "value": "clamped" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s2_place"]
+    },
+    {
+      "id": "s2_close_door", "stage": 2, "title": "Close the door",
+      "spokenInstruction": "Close the machine door.",
+      "rationale": "The cycle will not start with the door open, and the door protects you from chips.",
+      "targetControl": "door",
+      "expectedAction": { "control": "door", "action": "set", "value": "closed" },
+      "checkpoint": true, "mode": "both", "forbiddenBefore": ["s2_clamp"]
+    },
+    {
+      "id": "s3_program", "stage": 3, "title": "Select program O1001",
+      "spokenInstruction": "Press PROGRAM until O1001 is selected.",
+      "rationale": "O1001 is the program written for this part and tool.",
+      "targetControl": "program_select",
+      "expectedAction": { "control": "program_select", "action": "set", "value": "O1001" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_mode_dry", "stage": 3, "title": "Select DRY mode",
+      "spokenInstruction": "Turn the mode selector to DRY.",
+      "rationale": "A dry run proves the path in the air before any metal is cut.",
+      "targetControl": "mode_selector",
+      "expectedAction": { "control": "mode_selector", "action": "set", "value": "DRY" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_feed_50", "stage": 3, "title": "Set feed to 50 percent",
+      "spokenInstruction": "Set the feed override to 50 percent.",
+      "rationale": "Slow motion gives you time to stop the machine if something looks wrong.",
+      "targetControl": "feed_override",
+      "expectedAction": { "control": "feed_override", "action": "set", "value": "50" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_cycle_dry", "stage": 3, "title": "Run the dry cycle",
+      "spokenInstruction": "Press CYCLE START and watch the dry run until it finishes.",
+      "rationale": "Never cut the first part without a dry run.",
+      "targetControl": "cycle_start",
+      "expectedAction": { "control": "cycle", "action": "complete", "value": "dry" },
+      "checkpoint": true, "mode": "both", "forbiddenBefore": ["s3_program", "s3_mode_dry", "s3_feed_50"]
+    },
+    {
+      "id": "s3_mode_auto", "stage": 3, "title": "Select AUTO mode",
+      "spokenInstruction": "Turn the mode selector to AUTO.",
+      "rationale": "AUTO runs the program for real production.",
+      "targetControl": "mode_selector",
+      "expectedAction": { "control": "mode_selector", "action": "set", "value": "AUTO" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_feed_100", "stage": 3, "title": "Set feed to 100 percent",
+      "spokenInstruction": "Set the feed override back to 100 percent.",
+      "rationale": "Production runs at full programmed feed.",
+      "targetControl": "feed_override",
+      "expectedAction": { "control": "feed_override", "action": "set", "value": "100" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_coolant", "stage": 3, "title": "Coolant ON",
+      "spokenInstruction": "Press COOLANT to turn the coolant on.",
+      "rationale": "Cutting without coolant overheats and ruins the tool.",
+      "targetControl": "coolant_btn",
+      "expectedAction": { "control": "coolant_btn", "action": "set", "value": "on" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": []
+    },
+    {
+      "id": "s3_cycle_prod", "stage": 3, "title": "Run the production cycle",
+      "spokenInstruction": "Press CYCLE START and let the part finish.",
+      "rationale": "This is the real cut, with coolant on and full feed.",
+      "targetControl": "cycle_start",
+      "expectedAction": { "control": "cycle", "action": "complete", "value": "auto" },
+      "checkpoint": true, "mode": "both", "forbiddenBefore": ["s3_cycle_dry", "s3_mode_auto", "s3_feed_100", "s3_coolant"]
+    },
+    {
+      "id": "s3_open_door", "stage": 3, "title": "Open the door",
+      "spokenInstruction": "Open the machine door.",
+      "rationale": "You can only reach the finished part with the door open.",
+      "targetControl": "door",
+      "expectedAction": { "control": "door", "action": "set", "value": "open" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s3_cycle_prod"]
+    },
+    {
+      "id": "s3_remove", "stage": 3, "title": "Remove the part",
+      "spokenInstruction": "Take the finished part out of the vise.",
+      "rationale": "The machine must be empty before shutdown.",
+      "targetControl": "workpiece",
+      "expectedAction": { "control": "workpiece", "action": "set", "value": "removed" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s3_open_door"]
+    },
+    {
+      "id": "s3_power_off", "stage": 3, "title": "Power OFF",
+      "spokenInstruction": "Press POWER to switch the machine off.",
+      "rationale": "Always power down after the job.",
+      "targetControl": "power_btn",
+      "expectedAction": { "control": "power_btn", "action": "set", "value": "off" },
+      "checkpoint": false, "mode": "both", "forbiddenBefore": ["s3_remove"]
+    }
+  ]
+}
