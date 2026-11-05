@@ -1,0 +1,62 @@
+# Verified facts
+
+Read on 2026-11-05. Items marked UNRESOLVED need a human decision or a first live call.
+
+## 0G Private Computer (Compute Router)
+
+- Mainnet base URL: `https://router-api.0g.ai/v1` (UI: pc.0g.ai). Testnet: `https://router-api-testnet.integratenetwork.work/v1` (UI: pc.testnet.0g.ai). Separate balances and keys.
+- Auth: `Authorization: Bearer sk-...`. `mk-...` keys are management only (balance, key admin), not for inference.
+- `GET /v1/models` is public (no key). `GET /v1/providers?model=<id>` lists TEE providers.
+- Chat: `POST /v1/chat/completions`, OpenAI-compatible. Extras: `verify_tee`, `plugins`, `X-0G-Provider-*` headers.
+- Request ID: response body field `x_0g_trace.request_id`. No response header documented.
+- JSON mode: `"response_format": {"type": "json_object"}` on models whose `supported_parameters` include `response_format`.
+- Thinking off: Qwen and DeepSeek models list `enable_thinking`; GLM and 0gm models take `chat_template_kwargs: {"enable_thinking": false}`. Passing the right one per model is needed.
+- Live model IDs (from `/v1/models`):
+  - Judge candidates: `qwen3.5-flash`, `qwen3.5-35b-a3b`, `qwen3.6-flash`, `qwen3.7-flash`, `qwen3.8-flash`. All list `response_format` and `enable_thinking`.
+  - STT: `whisper-large-v3` (params: file, model, language, response_format).
+  - TTS: `minimax-speech-02-turbo`, `minimax-speech-02-hd`, `minimax-speech-2.6-turbo`, `minimax-speech-2.6-hd`, `minimax-speech-2.8-turbo`, `minimax-speech-2.8-hd`.
+- STT: `POST /v1/audio/transcriptions`, multipart with `file`, `model`, optional `response_format` (json|text|srt|verbose_json|vtt), `language`, `prompt`, `temperature`. JSON reply has `text`. The docs example writes the model as `openai/whisper-large-v3`, the live list says `whisper-large-v3`: use the live ID.
+- UNRESOLVED: TTS endpoint path and request shape (not documented; likely `/v1/audio/speech`, unconfirmed). Request ID location on STT/TTS responses. Free-tier or deposit needed before the first call. Needs a key from pc.0g.ai to test.
+
+## 0G Storage and Chain
+
+- Package `@0gfoundation/0g-storage-ts-sdk` with `ethers`.
+- Testnet (Galileo): chain ID `16602`, RPC `https://evmrpc-testnet.0g.ai` (dev only), explorer `https://chainscan-galileo.0g.ai`, faucet `https://faucet.0g.ai` (0.1 0G per wallet per day).
+- Storage indexer (turbo): `https://indexer-storage-testnet-turbo.0g.ai`.
+- Upload: `new Indexer(indexerUrl)`, `new MemData(Uint8Array)`, `await memData.merkleTree()`, `const [tx, err] = await indexer.upload(memData, RPC_URL, signer)`. Result holds `rootHash` and `txHash`.
+- Download: `indexer.download(rootHash, outputPath, true)` returns `err`; writes with `fs.appendFileSync` (Node only). `indexer.downloadToBlob(rootHash, {proof, decryption})` returns `[blob, err]`.
+
+## ENSv2 (Sepolia)
+
+- Permissioned Registry: `register(label, owner, registry, resolver, roleBitmap, expiry)`, `renew(anyId, newExpiry)`, `unregister(anyId)`, `revokeRoles(anyId, roleBitmap, account)`, `revokeRootRoles(roleBitmap, account)`. Expired when `block.timestamp >= expiry`.
+- Registry roles: `ROLE_REGISTRAR` 1<<0, `ROLE_REGISTER_RESERVED` 1<<4, `ROLE_UNREGISTER` 1<<12, `ROLE_RENEW` 1<<16, `ROLE_SET_SUBREGISTRY` 1<<20, `ROLE_SET_RESOLVER` 1<<24. Admin variant is `role << 128`.
+- Revoke a certificate: `unregister(anyId)` (needs `ROLE_UNREGISTER`). It makes the name available at once, so `/credential` can treat a missing name as revoked.
+- Permissioned Resolver: `setText(bytes name, string key, string value)`, `multicall(bytes[])`, `grantSetterRoles(bytes setter, address account)` (argument-scoped, setter is ABI-encoded calldata, caller needs the admin role), `grantRootRoles`, `revokeRootRoles`, `revokeRoles(resource, roleBitmap, account)`.
+- Text roles: `ROLE_SET_TEXT` 1<<4, admin `(1<<4)<<128`. A key's resource is `keccak256(bytes(key))`. This is the per-key delegation for the guide, approver and worker accounts.
+- Sepolia addresses: RootRegistry `0xb458d6a3a77919449d03e7a6903c26827c1ec43f`, ETHRegistry `0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4`, ETHRegistrar `0xf633e7fc17e2bbe0d0965d18ec1821dcb754a3d3`, VerifiableFactory `0xda70306c98e97ece36f997a21368e53298572991`, UserRegistryImpl `0x9bd8a88719068d09ecee662f36c0e3856708366a`, PermissionedResolverImpl `0x115eb53f0c60696633855f90b138178fb40b2b2c`, UniversalResolverV2 `0x24e1d8e068620b647ca097f961a61055f4f42d72`, MockUSDC `0x240b0316df57887dbbe58b586508b19e633a14aa`. Full table: docs.ens.domains/learn/deployments#sepolia-ensv2.
+- Conflict to check: the ENS learn page names a different test USDC (`0x16f95d91dba7da3aca778ec053df0ff6c6a8aa8e`) than the deployments table MockUSDC above. Use the deployments table and verify on-chain before minting.
+- Resolution: libraries with ENSv2 support go through the Universal Resolver automatically. Smoke test: resolve `ur.integration-tests.eth`; `0x2222...` means v2 works, `0x1111...` means the library is outdated. Never hard-code the Universal Resolver address in app code.
+- UNRESOLVED: exact viem/ENSjs version that resolves v2 on Sepolia; the SimpleSubnameRegistrar reference code; ENSIP-26 agent record keys (not read yet); `initialize()` role bitmap details for UserRegistry. Read these in E1/E2.
+
+## World ID (auth.world.org)
+
+- World's docs describe an OIDC provider, issuer `https://auth.world.org`, discovery `/.well-known/openid-configuration`, portal login with Google, client secrets prefixed `worldidp_client_secret_`, auth methods `client_secret_basic|client_secret_post|private_key_jwt`, ID tokens RS256 via JWKS.
+- Callbacks must be HTTPS with exact match, no wildcards. A tunnel or the final subdomain is needed; the LAN address will not work for the redirect.
+- Fresh approval: `max_age=0` plus an essential `acr` claim request (Orb class is `https://world.org/oidc/acr/orb`). Denied, cancelled, failed validation and expiry leave the action blocked. Retrying or status checks must not extend expiry.
+- Headless agents use a device authorization flow; mobile approves, polling returns `access_denied` on failure. Pages mentioned: Sandbox and testing, Authentication (OIDC).
+- NAME GAP: public docs never say "Agent Pass"; the matching mechanism is the Device Authorization Grant (RFC 8628, "Agent access"). It has no `approvalId` or QR API: the backend builds `approvalId` itself and renders the QR from `verification_uri_complete`.
+- Device flow: POST form-encoded `scope=openid` (confidential client auth) to `https://auth.world.org/api/v1/device_authorization`; response has `device_code` (keep server-side), `user_code`, `verification_uri`, `verification_uri_complete`, `expires_in` (20 min), `interval`. Poll the token endpoint with `grant_type=urn:ietf:params:oauth:grant-type:device_code`. No callback, PKCE or state. Fresh authentication is always required. Approval page shows only requester and user code; `binding_message` is unsupported.
+- Poll outcomes: `authorization_pending` (wait), `slow_down` (+5 s), `access_denied` / `expired_token` / `invalid_grant` (stop, no approval), 503 is never approval, 429 can end the attempt. No separate "cancelled" code: map cancel to the backend's own state. Validate the ID token (signature, issuer, audience, expiry, `auth_time`, `acr`, `amr`); device tokens omit `nonce`.
+- Redirect URI is still required at registration for device-only clients, but is not used, so a placeholder is fine and no tunnel is needed for World.
+- Sandbox: issuer `https://sandbox.auth.world.org`, own discovery, own portal, own credentials and World IDs. Needs the sandbox World ID app (iOS TestFlight invite via a World contact, then Add proof of human > Manual verify with a selfie, about 1 hour to issue). OAuth Playground: https://oauth-playground.toolsforhumanity.dev/ runs device flow against the sandbox. Sandbox results do not prove real Orb verification; never claim it.
+- Guides are readable without sign-in; `coding-agent-setup` also offers a developer MCP server (`https://auth.world.org/mcp/developer`, sandbox `https://sandbox.auth.world.org/mcp/developer`). Not added.
+- Portal (seen 2026-11-05): an `.edu.in` Google account passed where another gave `account_not_eligible`. Portal tabs: Apps, Agents. Create-app form fields: name, logo URL, Redirect URIs (exact HTTPS, one per line, one per environment), auth method (default Client secret Basic, immutable), default accepted accounts (Orb, Selfie Check, Any account), optional Face Auth, advanced subject identifiers. The form states each device connection needs phone approval plus a fresh World ID proof.
+- Live discovery (both environments): endpoints are `<issuer>/api/v1/authorize`, `/api/v1/token`, `/api/v1/device_authorization`, jwks at `/.well-known/jwks.json`. Device grant is advertised by both. Token-endpoint auth: client_secret_basic, client_secret_post, private_key_jwt. Only two acr values exist (Orb, Orb-face), so an "Any account" client returns tokens with no `acr`; the backend must not require it in that mode. Sandbox also lists `offline_access` and token-exchange (XAA, not used).
+- Client auth for the device endpoint and polling uses the registered method (Basic header by default). Secret prefix `worldidp_client_secret_`; never log request bodies or Authorization headers.
+- Failure-path expectations from the testing guide: cancel or expire before approval grants nothing; a result bound to another attempt fails validation; a consumed device code cannot be redeemed twice; an error or unknown outcome is never treated as success. Our backend must keep one-use semantics for certificate issuance.
+- Not found anywhere in public docs: "Agent Pass", an Agents-tab guide, env var names (we choose ours: WORLD_ISSUER, WORLD_CLIENT_ID, WORLD_CLIENT_SECRET), a portal-side device-grant switch.
+- UNRESOLVED (needs a person): contents of the portal Agents tab; which environment the prize judges expect; sandbox portal URL (docs link it, path not read); sandbox app access depends on a World contact. The portal screenshot seen was production.
+
+## Meta Quest / Unity
+
+- Unity project currently has only URP, Input System and built-in modules. No Meta XR SDK, no Newtonsoft JSON, no glTFast installed.- UNRESOLVED until the SDK is installed (brief 6.1 step 3): Building Block names, `OVRCameraRig` anchor member names, `OVRInput` button names. Read them from `Library/PackageCache` after install.
