@@ -66,6 +66,23 @@ export interface EpisodeView {
   events: EpisodeEvent[];
 }
 
+export interface ProcedureStep {
+  id: string;
+  stage: number;
+  title: string;
+  checkpoint: boolean;
+  expectedAction: { control: string; action: string; value: string };
+}
+
+export interface Procedure {
+  id: string;
+  name: string;
+  version: string;
+  hintLimit: number;
+  stages: { id: number; title: string }[];
+  steps: ProcedureStep[];
+}
+
 export interface ChainSummary {
   zeroG: { chainId: number; registry: string | null; explorer: string; storageExplorer: string; model: string; router: string };
   ens: { network: string; parent: string; resolver: string; userRegistry: string; registrar: string; issuer: string; explorer: string };
@@ -83,6 +100,7 @@ export const api = {
   anchors: () => get<{ contract: string | null; anchors: AnchorRow[] }>('/api/anchors'),
   certificates: () => get<{ certificates: CertificateRow[] }>('/api/certificates'),
   chain: () => get<ChainSummary>('/api/chain'),
+  procedure: () => get<Procedure>('/api/procedure'),
   episode: (root: string) => get<EpisodeView>(`/api/episode/${root}`),
 };
 
