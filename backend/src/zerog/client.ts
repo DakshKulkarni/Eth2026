@@ -53,7 +53,7 @@ function acceptsTemperature(model: string): boolean {
 
 export function tokenBudget(model: string): number {
   if (lowEffortClaude(model)) return 400;
-  return /^gpt-[56]|^claude/.test(model) ? 1500 : 200;
+  return /^gpt-[56]|^claude/.test(model) ? 1500 : 450;
 }
 
 export async function chat(options: ChatOptions): Promise<ZgResult> {

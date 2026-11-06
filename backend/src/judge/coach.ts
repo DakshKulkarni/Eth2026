@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { chat } from '../zerog/client.js';
 import type { Procedure } from '../shared/procedure.js';
 import type { Session } from '../session.js';
+import { activity } from '../activity.js';
 import { buildMessages } from './prompt.js';
 import { modelOutputSchema, type CoachResult, type Observe } from './schema.js';
 
@@ -16,9 +17,20 @@ function trimWords(text: string, max: number): string {
 
 function parseModelJson(content: string): unknown {
   const start = content.indexOf('{');
-  const end = content.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('no JSON object in reply');
-  return JSON.parse(content.slice(start, end + 1));
+  if (start < 0) throw new Error('no JSON object in reply');
+  const body = content.slice(start).trim();
+  const end = body.lastIndexOf('}');
+  const attempts = [end > 0 ? body.slice(0, end + 1) : body, body, `${body}}`];
+  let last: unknown;
+  for (const text of attempts) {
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      last = err;
+    }
+  }
+  // A reply that is complete except for its final closing brace is repaired above; the schema still validates the result.
+  throw last;
 }
 
 function safeStop(latencyMs: number, failure: string): CoachResult {
@@ -104,8 +116,13 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
 function parseOutput(content: string): z.infer<typeof modelOutputSchema> | null {
   try {
     const out = modelOutputSchema.safeParse(parseModelJson(content));
-    return out.success ? out.data : null;
-  } catch {
+    if (!out.success) {
+      activity('invalid_reply', { why: out.error.issues.map((i) => i.message).join('; ').slice(0, 200), reply: content.slice(0, 400) });
+      return null;
+    }
+    return out.data;
+  } catch (err) {
+    activity('invalid_reply', { why: err instanceof Error ? err.message.slice(0, 120) : 'parse error', reply: content.slice(0, 400) });
     return null;
   }
 }
