@@ -39,12 +39,17 @@ namespace MrTrainer.Core
             return Post("/session/" + sessionId + "/observe", request, done);
         }
 
-        public IEnumerator Tts(string text, Action<ApiResult<AudioClip>> done)
+        public IEnumerator Finalize(string sessionId, string outcome, Action<ApiResult<FinalizeResponse>> done)
+        {
+            return Post("/session/" + sessionId + "/finalize", new FinalizeRequest { outcome = outcome }, done, 120);
+        }
+
+        public IEnumerator Tts(string text, string sessionId, Action<ApiResult<AudioClip>> done)
         {
             string url = baseUrl + "/tts";
             using (var req = new UnityWebRequest(url, "POST"))
             {
-                req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new { text })));
+                req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new { text, sessionId })));
                 req.downloadHandler = new DownloadHandlerAudioClip(url, AudioType.WAV);
                 req.SetRequestHeader("Content-Type", "application/json");
                 req.timeout = Config.TimeoutSeconds;
@@ -59,14 +64,14 @@ namespace MrTrainer.Core
             }
         }
 
-        IEnumerator Post<T>(string path, object body, Action<ApiResult<T>> done)
+        IEnumerator Post<T>(string path, object body, Action<ApiResult<T>> done, int timeoutSeconds = 0)
         {
             using (var req = new UnityWebRequest(baseUrl + path, "POST"))
             {
                 req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(body)));
                 req.downloadHandler = new DownloadHandlerBuffer();
                 req.SetRequestHeader("Content-Type", "application/json");
-                req.timeout = Config.TimeoutSeconds;
+                req.timeout = timeoutSeconds > 0 ? timeoutSeconds : Config.TimeoutSeconds;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success)
                 {
@@ -89,7 +94,9 @@ namespace MrTrainer.Core
         {
             string kind = req.result == UnityWebRequest.Result.ProtocolError ? "http" :
                           req.error != null && req.error.ToLowerInvariant().Contains("timeout") ? "timeout" : "network";
-            return Error<T>(kind, req.error ?? "request failed");
+            string detail = req.downloadHandler is DownloadHandlerBuffer ? req.downloadHandler.text : "";
+            if (detail.Length > 160) detail = detail.Substring(0, 160);
+            return Error<T>(kind, (req.error ?? "request failed") + (detail.Length > 0 ? " " + detail : ""));
         }
 
         static ApiResult<T> Error<T>(string kind, string message)

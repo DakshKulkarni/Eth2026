@@ -67,4 +67,5 @@ export interface CoachResult {
   requestId: string;
   model: string;
   latencyMs: number;
+  failure?: string;
 }

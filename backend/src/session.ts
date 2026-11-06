@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import type { Outcome } from './episode/bundle.js';
+import { EpisodeLog } from './episode/chain.js';
 import type { Action } from './judge/schema.js';
 
 export interface Coaching {
@@ -6,18 +8,42 @@ export interface Coaching {
   line: string;
 }
 
+export interface Finalized {
+  outcome: Outcome;
+  rootHash: string;
+  storageTx: string;
+  storageTxSeq: number;
+  anchorTx: string | null;
+  anchorError: string | null;
+  headHash: string;
+  records: number;
+  links: { storage: string; anchor: string | null };
+}
+
 export interface Session {
   id: string;
+  startedAt: string;
   lastSeq: number;
   busy: boolean;
   actions: Action[];
   history: Coaching[];
+  log: EpisodeLog;
+  finalized: Finalized | null;
 }
 
 const sessions = new Map<string, Session>();
 
 export function createSession(): Session {
-  const session: Session = { id: randomUUID(), lastSeq: 0, busy: false, actions: [], history: [] };
+  const session: Session = {
+    id: randomUUID(),
+    startedAt: new Date().toISOString(),
+    lastSeq: 0,
+    busy: false,
+    actions: [],
+    history: [],
+    log: new EpisodeLog(),
+    finalized: null,
+  };
   sessions.set(session.id, session);
   return session;
 }

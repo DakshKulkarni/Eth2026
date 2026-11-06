@@ -38,6 +38,24 @@ Read on 2026-11-05. Items marked UNRESOLVED need a human decision or a first liv
 - Upload: `new Indexer(indexerUrl)`, `new MemData(Uint8Array)`, `await memData.merkleTree()`, `const [tx, err] = await indexer.upload(memData, RPC_URL, signer)`. Result holds `rootHash` and `txHash`.
 - Download: `indexer.download(rootHash, outputPath, true)` returns `err`; writes with `fs.appendFileSync` (Node only). `indexer.downloadToBlob(rootHash, {proof, decryption})` returns `[blob, err]`.
 
+### Evidence trail design (built and verified live 2026-11-06)
+
+- Live result of `npm run smoke:evidence`: an 841-byte bundle uploaded to 0G Storage (root hash `0x6b1a9ace...59ade`, storage tx `0x5bccc90c...6459b`), anchored on 0G Chain (tx `0xb6b22d96...a1414`, explorer https://chainscan-galileo.0g.ai/tx/0xb6b22d9664837ebbbc0bce61bb567682b1fb7ddfce9840ebcaf5ab01f66a1414), the contract read-back matched the root hash and outcome, and the bundle downloaded with proof and verified (2 records, head hash matched).
+- Storage fee for that upload was 122934579848 neuron (about 0.0000001 0G). Storage nodes needed about three sync waits before accepting the file; the download worked on the first attempt.
+
+- Episode log: hash-chained records (`prevHash`, sha256 over canonical JSON) for `session_start`, every `observe` (state, new actions, frame sha256, verdict, mistakes, request ID, model, latency, safe-stop reason), every `speech` request ID, and `session_end`. Frames are hashed, never uploaded.
+- Bundle verification rejects an edited, deleted or reordered record (tested offline with `npm run smoke:episode`).
+- Upload: `Indexer.upload(MemData, rpc, signer)` returns `[{txHash, rootHash, txSeq}, error]`; download for verification uses `downloadToBlob(rootHash, {proof: true})`. The SDK's types come from the CommonJS build of ethers, so the signer needs one typed cast.
+- Registry contract `contracts/src/SessionRegistry.sol` (issuer-only `anchor(sessionId, rootHash, outcome)`, event `SessionAnchored`, one anchor per session). Outcome codes: 1 learn_complete, 2 test_pass, 3 test_fail, 4 abandoned. Compiled with solc-js, EVM target `paris` to avoid opcodes a chain may not support; Foundry is not installed here.
+- `POST /session/:id/finalize` never fakes a hash: with no wallet or a failed upload it returns 502 `storage_unavailable`; if only the anchor fails it returns the real root hash plus `anchorError`.
+
+### Explorer links (verified in the browser 2026-11-06)
+
+- Chain transaction: `https://chainscan-galileo.0g.ai/tx/<txHash>` shows status, the registry contract in "To", and the root hash in the input data. `/address/<contract>` redirected to the home page, so it is not used.
+- Storage file: `https://storagescan-galileo.0g.ai/submission/<txSeq>` shows the file hash (our root hash), size, base fee, sender, L1 tx and time. The `txSeq` comes back from `Indexer.upload`, and `POST /session/:id/finalize` now returns it as `storageTxSeq` plus ready-made `links.storage` and `links.anchor`.
+- Registry contract on Galileo: `0xb0725934080eeE16A287FF752a41a2Ae4dFC5453`.
+- DASHBOARD REQUIREMENT (from the user): the web dashboard must show, live, the proof that storage and logging happened: the episode records as they are written, the 0G Storage root hash, the anchor transaction, and clickable links to both explorers, so a judge can verify in one click.
+
 ## ENSv2 (Sepolia)
 
 - Permissioned Registry: `register(label, owner, registry, resolver, roleBitmap, expiry)`, `renew(anyId, newExpiry)`, `unregister(anyId)`, `revokeRoles(anyId, roleBitmap, account)`, `revokeRootRoles(roleBitmap, account)`. Expired when `block.timestamp >= expiry`.

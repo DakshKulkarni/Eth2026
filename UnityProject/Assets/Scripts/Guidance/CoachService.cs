@@ -189,6 +189,17 @@ namespace MrTrainer.Guidance
             done(v);
         }
 
+        public IEnumerator Finalize(string outcome, Action<ApiResult<FinalizeResponse>> done)
+        {
+            active = false;
+            yield return new WaitUntil(() => !busy);
+            busy = true;
+            ApiResult<FinalizeResponse> result = null;
+            yield return api.Finalize(sessionId, outcome, r => result = r);
+            busy = false;
+            done(result);
+        }
+
         public IEnumerator Reconnect(Action<bool> done)
         {
             yield return new WaitUntil(() => !busy);
@@ -240,7 +251,7 @@ namespace MrTrainer.Guidance
             if (speaking) yield break;
             speaking = true;
             ApiResult<AudioClip> result = null;
-            yield return api.Tts(text, r => result = r);
+            yield return api.Tts(text, sessionId, r => result = r);
             if (result.Ok)
             {
                 AudioSource.PlayClipAtPoint(result.value, head.position, 1f);

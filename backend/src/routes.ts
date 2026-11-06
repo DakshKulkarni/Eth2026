@@ -1,14 +1,20 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { speak } from './zerog/speech.js';
-import { config } from './config.js';
+import { anchorSession } from './chain/anchor.js';
+import { config, keyProblem } from './config.js';
+import { buildBundle, OUTCOMES } from './episode/bundle.js';
+import { sha256 } from './episode/chain.js';
+import { explorer } from './explorer.js';
+import { uploadBundle } from './episode/storage.js';
 import { coach } from './judge/coach.js';
 import { observeSchema } from './judge/schema.js';
 import { createSession, getSession } from './session.js';
 import { loadProcedure } from './shared/procedure.js';
+import { speak } from './zerog/speech.js';
 
 const procedure = loadProcedure();
-const ttsSchema = z.object({ text: z.string().min(1).max(400) });
+const ttsSchema = z.object({ text: z.string().min(1).max(400), sessionId: z.string().optional() });
+const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/health', async () => ({
@@ -16,6 +22,10 @@ export function registerRoutes(app: FastifyInstance): void {
     version: '0.1.0',
     zerog: config.ZG_API_KEY ? 'configured' : 'no_key',
     model: config.ZG_COACH_MODEL,
+    evidence: {
+      wallet: !config.AGENT_PRIVATE_KEY ? 'no_key' : keyProblem() ? 'invalid_key' : 'configured',
+      registry: config.ZG_REGISTRY_ADDRESS ?? 'not_deployed',
+    },
   }));
 
   app.post('/tts', async (req, reply) => {
@@ -23,18 +33,32 @@ export function registerRoutes(app: FastifyInstance): void {
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
     const result = await speak(body.data.text);
     if (!result.ok) return reply.code(502).send({ error: 'tts_unavailable', reason: result.reason });
+    const session = body.data.sessionId ? getSession(body.data.sessionId) : undefined;
+    session?.log.append('speech', {
+      requestId: result.requestId,
+      model: config.ZG_TTS_MODEL,
+      latencyMs: result.latencyMs,
+      textSha256: sha256(body.data.text),
+      words: body.data.text.split(/\s+/).length,
+    });
     if (result.requestId) reply.header('X-0G-Request-Id', result.requestId);
     return reply.type(result.contentType).send(result.audio);
   });
 
   app.post('/session/start', async () => {
     const session = createSession();
+    session.log.append('session_start', {
+      procedureId: procedure.id,
+      procedureVersion: procedure.version,
+      coachModel: config.ZG_COACH_MODEL,
+    });
     return { sessionId: session.id, procedure, model: config.ZG_COACH_MODEL };
   });
 
   app.post<{ Params: { id: string } }>('/session/:id/observe', async (req, reply) => {
     const session = getSession(req.params.id);
     if (!session) return reply.code(404).send({ error: 'unknown_session' });
+    if (session.finalized) return reply.code(409).send({ error: 'session_finalized' });
 
     const body = observeSchema.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request', issues: body.error.issues });
@@ -42,9 +66,61 @@ export function registerRoutes(app: FastifyInstance): void {
     if (session.busy) return reply.code(409).send({ error: 'busy' });
     session.busy = true;
     try {
-      return await coach(session, procedure, body.data);
+      const result = await coach(session, procedure, body.data);
+      session.log.append('observe', {
+        trigger: body.data.trigger,
+        checkpointId: body.data.checkpointId ?? null,
+        mode: body.data.mode,
+        machine: body.data.machine,
+        actions: body.data.actions,
+        frameSha256: body.data.frame ? sha256(body.data.frame) : null,
+        result,
+      });
+      return result;
     } finally {
       session.busy = false;
     }
+  });
+
+  app.post<{ Params: { id: string } }>('/session/:id/finalize', async (req, reply) => {
+    const session = getSession(req.params.id);
+    if (!session) return reply.code(404).send({ error: 'unknown_session' });
+    if (session.finalized) return session.finalized;
+
+    const body = finalizeSchema.safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+
+    session.log.append('session_end', { outcome: body.data.outcome });
+    const records = session.log.all;
+    const bundle = buildBundle({
+      sessionId: session.id,
+      procedureId: procedure.id,
+      procedureVersion: procedure.version,
+      coachModel: config.ZG_COACH_MODEL,
+      startedAt: session.startedAt,
+      outcome: body.data.outcome,
+      records,
+      headHash: session.log.head,
+    });
+
+    const upload = await uploadBundle(bundle);
+    if (!upload.ok) return reply.code(502).send({ error: 'storage_unavailable', reason: upload.reason });
+
+    const anchor = await anchorSession(session.id, upload.rootHash, body.data.outcome);
+    session.finalized = {
+      outcome: body.data.outcome,
+      rootHash: upload.rootHash,
+      storageTx: upload.txHash,
+      storageTxSeq: upload.txSeq,
+      anchorTx: anchor.ok ? anchor.txHash : null,
+      anchorError: anchor.ok ? null : anchor.reason,
+      headHash: bundle.headHash,
+      records: records.length,
+      links: {
+        storage: explorer.storageSubmission(upload.txSeq),
+        anchor: anchor.ok ? explorer.chainTx(anchor.txHash) : null,
+      },
+    };
+    return session.finalized;
   });
 }

@@ -275,9 +275,25 @@ namespace MrTrainer.Guidance
         void OnCompleted()
         {
             highlight.Clear();
-            coach.StopSession();
             banner.Hide();
+            StartCoroutine(Complete());
+        }
+
+        IEnumerator Complete()
+        {
             bool test = runner.Mode == TrainingMode.Test;
+            string outcome = !test ? "learn_complete" : runner.TestPassed ? "test_pass" : "test_fail";
+            modal.Show(new ModalSpec
+            {
+                title = "Saving the training record",
+                chip = "0G STORAGE",
+                accent = ui.T.accent,
+                body = "Uploading the evidence log to 0G Storage and anchoring it on 0G Chain. This can take up to a minute."
+            });
+            ApiResult<FinalizeResponse> saved = null;
+            yield return coach.Finalize(outcome, r => saved = r);
+            coach.StopSession();
+
             var spec = new ModalSpec();
             if (!test)
             {
@@ -307,8 +323,28 @@ namespace MrTrainer.Guidance
                 spec.buttons.Add(new ModalButton { label = "Learn mode", color = ui.T.accent, click = () => Begin(TrainingMode.Learn) });
                 spec.buttons.Add(new ModalButton { label = "Retry test", color = ui.T.warning, click = () => Begin(TrainingMode.Test) });
             }
+            AddEvidence(spec, saved);
             ProceduralSfx.Play(ProceduralSfx.Success, head.position);
             modal.Show(spec);
+        }
+
+        static void AddEvidence(ModalSpec spec, ApiResult<FinalizeResponse> saved)
+        {
+            if (!saved.Ok)
+            {
+                spec.bullets.Add("Training record was NOT saved to 0G: " + saved.error.message);
+                return;
+            }
+            var f = saved.value;
+            spec.bullets.Add("0G Storage root: " + Short(f.rootHash));
+            spec.bullets.Add(string.IsNullOrEmpty(f.anchorTx)
+                ? "0G Chain anchor failed: " + f.anchorError
+                : "Anchored on 0G Chain, tx " + Short(f.anchorTx));
+        }
+
+        static string Short(string hash)
+        {
+            return hash.Length > 18 ? hash.Substring(0, 10) + "..." + hash.Substring(hash.Length - 6) : hash;
         }
 
         static TrustInfo Trust(Verdict v)

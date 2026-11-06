@@ -130,4 +130,20 @@ namespace MrTrainer.Core
         public string sessionId;
         public string model;
     }
+
+    public class FinalizeRequest
+    {
+        public string outcome;
+    }
+
+    public class FinalizeResponse
+    {
+        public string outcome;
+        public string rootHash;
+        public string storageTx;
+        public string anchorTx;
+        public string anchorError;
+        public string headHash;
+        public int records;
+    }
 }

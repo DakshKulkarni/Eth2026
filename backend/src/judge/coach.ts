@@ -21,7 +21,7 @@ function parseModelJson(content: string): unknown {
   return JSON.parse(content.slice(start, end + 1));
 }
 
-function safeStop(latencyMs: number): CoachResult {
+function safeStop(latencyMs: number, failure: string): CoachResult {
   return {
     verdict: 'safe_stop',
     completedSteps: [],
@@ -31,6 +31,7 @@ function safeStop(latencyMs: number): CoachResult {
     requestId: '',
     model: '',
     latencyMs,
+    failure,
   };
 }
 
@@ -47,7 +48,7 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
   let totalMs = 0;
   let result = await chat({ messages });
   totalMs += result.latencyMs;
-  if (!result.ok) return safeStop(totalMs);
+  if (!result.ok) return safeStop(totalMs, `${result.reason}: ${result.detail}`);
   let parsed = parseOutput(result.content);
 
   if (!parsed) {
@@ -59,9 +60,9 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
     });
     result = await chat({ messages });
     totalMs += result.latencyMs;
-    if (!result.ok) return safeStop(totalMs);
+    if (!result.ok) return safeStop(totalMs, `${result.reason}: ${result.detail}`);
     parsed = parseOutput(result.content);
-    if (!parsed) return safeStop(totalMs);
+    if (!parsed) return safeStop(totalMs, 'invalid reply after retry');
   }
 
   for (const a of fresh) {
