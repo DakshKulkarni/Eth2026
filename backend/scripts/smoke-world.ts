@@ -91,8 +91,6 @@ const Fastify = (await import('fastify')).default;
 const { registerRoutes } = await import('../src/routes.js');
 const app = Fastify();
 registerRoutes(app);
-const page = await app.inject({ method: 'GET', url: '/checkin' });
-check('GET /checkin serves the page', page.statusCode === 200 && page.body.includes('Verify with World'));
 Object.assign(mode, { next: 'approve', polls: 0, expiresIn: 600 });
 const start = await app.inject({ method: 'POST', url: '/checkin/start', payload: {} });
 const started = start.json() as { checkinId: string; userCode: string; link: string; qrPng: string };

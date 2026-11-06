@@ -8,3 +8,4 @@ docs
 !**/.env.example
 backend/logs
 backend/dist
+dashboard/dist

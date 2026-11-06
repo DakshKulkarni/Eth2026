@@ -14,14 +14,12 @@ import { uploadBundle } from './episode/storage.js';
 import { coach } from './judge/coach.js';
 import { observeSchema } from './judge/schema.js';
 import { createSession, getSession } from './session.js';
-import { readFileSync } from 'node:fs';
 import { loadProcedure } from './shared/procedure.js';
 import { speak } from './zerog/speech.js';
 import { cancelCheckin, claimCheckin, createCheckin, expireIfDue, getCheckin, publicView, readyCheckin, setName } from './world/checkins.js';
 import { worldConfigured } from './world/oidc.js';
 
 const procedure = loadProcedure();
-const checkinPage = readFileSync(new URL('../public/checkin.html', import.meta.url), 'utf8');
 const ttsSchema = z.object({ text: z.string().min(1).max(400), sessionId: z.string().optional() });
 const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 const certificateSchema = z.object({
@@ -150,8 +148,6 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   // Worker check-in: a phone page proves the worker is a real human through World before Test mode unlocks.
-  app.get('/checkin', async (_req, reply) => reply.type('text/html; charset=utf-8').send(checkinPage));
-
   app.post('/checkin/start', async (_req, reply) => {
     if (!worldConfigured()) return reply.code(503).send({ error: 'world_not_configured' });
     const created = await createCheckin();
