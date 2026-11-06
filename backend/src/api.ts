@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { config } from './config.js';
+import { certificateDetail, chainSummary, episodeView, listAnchors, listCertificates } from './chainview.js';
 import { recent, stats, subscribe, type Track } from './events.js';
+import { LABEL_PATTERN } from './ens/read.js';
 import { loadProcedure } from './shared/procedure.js';
 import { worldConfigured } from './world/oidc.js';
 
@@ -42,6 +44,38 @@ export function registerApi(app: FastifyInstance): void {
   });
 
   app.get('/api/procedure', async () => procedure);
+  app.get('/api/chain', async () => chainSummary());
+
+  app.get('/api/anchors', async (_req, reply) => {
+    try {
+      return await listAnchors();
+    } catch (err) {
+      return reply.code(502).send({ error: 'chain_unavailable', reason: err instanceof Error ? err.message.slice(0, 120) : 'error' });
+    }
+  });
+
+  app.get('/api/certificates', async (_req, reply) => {
+    try {
+      return { certificates: await listCertificates() };
+    } catch (err) {
+      return reply.code(502).send({ error: 'chain_unavailable', reason: err instanceof Error ? err.message.slice(0, 120) : 'error' });
+    }
+  });
+
+  app.get<{ Params: { label: string } }>('/api/certificate/:label', async (req, reply) => {
+    if (!LABEL_PATTERN.test(req.params.label)) return reply.code(400).send({ error: 'invalid_label' });
+    try {
+      return await certificateDetail(req.params.label);
+    } catch (err) {
+      return reply.code(502).send({ error: 'chain_unavailable', reason: err instanceof Error ? err.message.slice(0, 120) : 'error' });
+    }
+  });
+
+  // Downloads one stored episode from 0G Storage, verifies its hash chain and returns a readable timeline.
+  app.get<{ Params: { root: string } }>('/api/episode/:root', async (req, reply) => {
+    if (!/^0x[0-9a-fA-F]{64}$/.test(req.params.root)) return reply.code(400).send({ error: 'invalid_root' });
+    return episodeView(req.params.root);
+  });
 
   // Quick facts about this server, for the dashboard header and overview.
   app.get('/api/overview', async () => {
