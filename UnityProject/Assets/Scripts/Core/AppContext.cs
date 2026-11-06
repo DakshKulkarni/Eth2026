@@ -47,10 +47,11 @@ namespace MrTrainer.Core
             banner.Build(ui, stepCard.transform);
             frames.Init(head);
             coach.sendFrames = sendFrames;
-            coach.Init(new ApiClient(Config.BackendUrl), machine, frames, head);
+            var api = new ApiClient(Config.BackendUrl);
+            coach.Init(api, machine, frames, head);
 
             flow.Init(procedure, machine, highlight, stepCard, modal, toasts, placer,
-                new RemoteCheckpointService(coach), ui, head, coach, banner);
+                new RemoteCheckpointService(coach), ui, head, coach, banner, api);
 
             yield return new WaitForSeconds(0.6f);
             placer.Recenter();

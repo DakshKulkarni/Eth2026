@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { anchorSession } from './chain/anchor.js';
+import { activity } from './activity.js';
 import { config, keyProblem } from './config.js';
 import { buildBundle, OUTCOMES } from './episode/bundle.js';
 import { sha256 } from './episode/chain.js';
@@ -59,6 +60,7 @@ export function registerRoutes(app: FastifyInstance): void {
       procedureVersion: procedure.version,
       coachModel: config.ZG_COACH_MODEL,
     });
+    activity('session_start', { session: session.id.slice(0, 8) });
     return { sessionId: session.id, procedure, model: config.ZG_COACH_MODEL };
   });
 
@@ -82,6 +84,17 @@ export function registerRoutes(app: FastifyInstance): void {
         actions: body.data.actions,
         frameSha256: body.data.frame ? sha256(body.data.frame) : null,
         result,
+      });
+      activity('observe', {
+        session: session.id.slice(0, 8),
+        trigger: body.data.trigger,
+        checkpoint: body.data.checkpointId ?? null,
+        mode: body.data.mode,
+        newActions: body.data.actions.map((a) => `${a.control} ${a.action} ${a.value}`.trim()),
+        verdict: result.verdict,
+        line: result.coachingLine,
+        failure: result.failure ?? null,
+        ms: result.latencyMs,
       });
       return result;
     } finally {
@@ -128,6 +141,7 @@ export function registerRoutes(app: FastifyInstance): void {
       evidenceRoot: session.finalized.rootHash,
       outcome: session.finalized.outcome,
     });
+    activity('certificate', { session: session.id.slice(0, 8), ok: issued.ok, name: issued.ok ? issued.name : null, reason: issued.ok ? null : issued.reason });
     if (!issued.ok) return reply.code(502).send({ error: 'issue_failed', reason: issued.reason });
     session.certificate = {
       name: issued.name,
@@ -162,7 +176,10 @@ export function registerRoutes(app: FastifyInstance): void {
     });
 
     const upload = await uploadBundle(bundle);
-    if (!upload.ok) return reply.code(502).send({ error: 'storage_unavailable', reason: upload.reason });
+    if (!upload.ok) {
+      activity('finalize_failed', { session: session.id.slice(0, 8), outcome: body.data.outcome, reason: upload.reason });
+      return reply.code(502).send({ error: 'storage_unavailable', reason: upload.reason });
+    }
 
     const anchor = await anchorSession(session.id, upload.rootHash, body.data.outcome);
     session.finalized = {
@@ -179,6 +196,13 @@ export function registerRoutes(app: FastifyInstance): void {
         anchor: anchor.ok ? explorer.chainTx(anchor.txHash) : null,
       },
     };
+    activity('finalize', {
+      session: session.id.slice(0, 8),
+      outcome: body.data.outcome,
+      rootHash: upload.rootHash,
+      anchored: anchor.ok,
+      anchorError: anchor.ok ? null : anchor.reason,
+    });
     return session.finalized;
   });
 }
