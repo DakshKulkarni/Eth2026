@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
+import { Ens } from './pages/Ens';
 import { Overview } from './pages/Overview';
 import { ZeroG } from './pages/ZeroG';
 import { Soon } from './pages/Soon';
@@ -10,7 +11,7 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<Overview />} />
         <Route path="0g" element={<ZeroG />} />
-        <Route path="ens" element={<Soon title="ENS" line="Licences and their key-value records arrive in the next batch." />} />
+        <Route path="ens" element={<Ens />} />
         <Route path="world" element={<Soon title="World" line="Check-ins and the human proof arrive in the next batch." />} />
         <Route path="live" element={<Soon title="Live" line="The live headset view arrives in a later batch." />} />
         <Route path="verify/*" element={<Soon title="Verify" line="Paste a licence name to check it end to end." />} />

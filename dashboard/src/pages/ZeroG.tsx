@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CountUp } from '../components/CountUp';
 import { EpisodeReplay } from '../components/EpisodeReplay';
 import { EventFeed } from '../components/EventFeed';
@@ -29,7 +30,8 @@ export function ZeroG() {
   const overview = useOverview();
   const anchors = useAnchors();
   const backlog = useBacklog();
-  const [picked, setPicked] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const [picked, setPicked] = useState<string | null>(params.get('root'));
   const replayRef = useRef<HTMLDivElement>(null);
 
   const rows = anchors.data?.anchors ?? [];

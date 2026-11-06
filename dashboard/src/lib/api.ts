@@ -83,6 +83,38 @@ export interface Procedure {
   steps: ProcedureStep[];
 }
 
+export interface Passport {
+  name: string;
+  registered: boolean;
+  owner: string | null;
+  expiresAt: string | null;
+  model: string | null;
+  procedure: string | null;
+  procedureRootHash: string | null;
+  guide: string | null;
+  guideVersion: string | null;
+  description: string | null;
+  readFrom: string;
+}
+
+export interface RecordWrite {
+  tx: string;
+  link: string;
+  records: { key: string; value: string }[];
+}
+
+export interface CertificateDetail {
+  licence: CertificateRow | null;
+  writes: RecordWrite[];
+  anchored: boolean;
+}
+
+export interface RevokeResult {
+  revoked: boolean;
+  revokeTx: string;
+  link: string;
+}
+
 export interface ChainSummary {
   zeroG: { chainId: number; registry: string | null; explorer: string; storageExplorer: string; model: string; router: string };
   ens: { network: string; parent: string; resolver: string; userRegistry: string; registrar: string; issuer: string; explorer: string };
@@ -101,6 +133,14 @@ export const api = {
   certificates: () => get<{ certificates: CertificateRow[] }>('/api/certificates'),
   chain: () => get<ChainSummary>('/api/chain'),
   procedure: () => get<Procedure>('/api/procedure'),
+  passport: (label: string) => get<Passport>(`/machine/${label}`),
+  certificate: (label: string) => get<CertificateDetail>(`/api/certificate/${label}`),
+  revoke: async (label: string, adminToken: string): Promise<RevokeResult> => {
+    const res = await fetch(`/credential/${label}/revoke`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-token': adminToken }, body: '{}' });
+    const body = (await res.json().catch(() => ({}))) as RevokeResult & { error?: string; reason?: string };
+    if (!res.ok) throw new Error(body.error === 'admin_token_required' ? 'That admin token was not accepted.' : body.reason ?? body.error ?? `Request failed (${res.status})`);
+    return body;
+  },
   episode: (root: string) => get<EpisodeView>(`/api/episode/${root}`),
 };
 

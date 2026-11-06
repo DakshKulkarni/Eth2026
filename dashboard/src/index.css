@@ -167,3 +167,10 @@ body {
 
 @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
 .skeleton { background: linear-gradient(90deg, var(--panel-2) 0, color-mix(in srgb, var(--ink) 9%, var(--panel-2)) 50%, var(--panel-2) 100%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; border-radius: 4px; }
+
+/* Dialog motion */
+@keyframes dlg-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dlg-pop { from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)) scale(0.98); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.plate.dlg-content { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.dlg-overlay[data-state="open"] { animation: dlg-fade 0.18s ease-out; }
+.dlg-content[data-state="open"] { animation: dlg-pop 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
