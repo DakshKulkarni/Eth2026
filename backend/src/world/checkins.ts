@@ -137,6 +137,7 @@ function settle(c: Checkin, status: CheckinStatus, reason: string | null): void 
 
 async function poll(c: Checkin): Promise<void> {
   let interval = c.intervalSeconds;
+  let retries = 0;
   while (c.status === 'pending') {
     await new Promise((r) => setTimeout(r, interval * 1000));
     if (c.status !== 'pending') return;
@@ -145,9 +146,14 @@ async function poll(c: Checkin): Promise<void> {
     if (c.status !== 'pending') return;
     switch (result.state) {
       case 'pending':
+        retries = 0;
         break;
       case 'slow_down':
         interval += 5;
+        break;
+      case 'retry':
+        if (++retries > 20) return settle(c, 'error', 'World could not be reached');
+        interval = Math.min(interval + 1, 10);
         break;
       case 'denied':
         return settle(c, 'denied', result.reason);

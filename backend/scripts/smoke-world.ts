@@ -7,7 +7,7 @@ const good = await generateKeyPair('RS256');
 const evil = await generateKeyPair('RS256');
 const jwk = { ...(await exportJWK(good.publicKey)), kid: 'k1', alg: 'RS256', use: 'sig' };
 const CLIENT = 'test-client';
-const mode: { next: 'approve' | 'deny' | 'forged' | 'stale' | 'slow'; polls: number; expiresIn: number } = { next: 'approve', polls: 0, expiresIn: 600 };
+const mode: { next: 'approve' | 'deny' | 'forged' | 'stale' | 'slow' | 'flaky'; polls: number; expiresIn: number } = { next: 'approve', polls: 0, expiresIn: 600 };
 let origin = '';
 
 const sign = (key: KeyLike, claims: Record<string, unknown>) =>
@@ -28,6 +28,7 @@ const server = createServer(async (req, res) => {
   if (req.url === '/token') {
     mode.polls++;
     if (mode.next === 'slow' && mode.polls === 1) return send(400, { error: 'slow_down' });
+    if (mode.next === 'flaky' && mode.polls === 2) { req.socket.destroy(); return; } // a dropped connection mid-poll
     if (mode.polls < 3) return send(400, { error: 'authorization_pending' });
     if (mode.next === 'deny') return send(400, { error: 'access_denied' });
     const now = Math.floor(Date.now() / 1000);
@@ -74,6 +75,7 @@ if (approved) {
   check('after a certificate it cannot be claimed again', !claimCheckin(approved.id, 'session-C').ok);
 }
 await run('slow_down then verify', 'slow', 'verified');
+await run('a dropped connection while polling does not fail the check-in', 'flaky', 'verified');
 await run('deny', 'deny', 'denied');
 await run('forged token', 'forged', 'denied');
 await run('stale token', 'stale', 'denied');

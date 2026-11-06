@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
+import { CheckIn } from './pages/CheckIn';
 import { Ens } from './pages/Ens';
 import { Live } from './pages/Live';
 import { Log } from './pages/Log';
@@ -12,6 +13,7 @@ import { Soon } from './pages/Soon';
 export function App() {
   return (
     <Routes>
+      <Route path="checkin" element={<CheckIn />} />
       <Route element={<Shell />}>
         <Route index element={<Overview />} />
         <Route path="0g" element={<ZeroG />} />

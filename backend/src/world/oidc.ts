@@ -74,6 +74,7 @@ export async function startDevice(): Promise<{ ok: true; device: DeviceStart } |
 export type PollResult =
   | { state: 'pending' }
   | { state: 'slow_down' }
+  | { state: 'retry' }
   | { state: 'approved'; idToken: string }
   | { state: 'denied'; reason: string }
   | { state: 'expired' }
@@ -93,8 +94,9 @@ export async function pollDevice(deviceCode: string): Promise<PollResult> {
     if (code === 'access_denied') return { state: 'denied', reason: 'the supervisor denied the request' };
     if (code === 'expired_token') return { state: 'expired' };
     return { state: 'error', reason: `${code || 'error'} (HTTP ${status})` };
-  } catch (err) {
-    return { state: 'error', reason: err instanceof Error ? err.message.slice(0, 120) : 'network error' };
+  } catch {
+    // A timeout or dropped connection while polling is not a decision. Back off and ask again.
+    return { state: 'retry' };
   }
 }
 
