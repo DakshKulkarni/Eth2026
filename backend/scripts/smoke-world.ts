@@ -109,6 +109,15 @@ check('/worker/ready now offers this worker', ready.ready === true && ready.alia
 const session = (await app.inject({ method: 'POST', url: '/session/start', payload: {} })).json() as { sessionId: string };
 const claim = await app.inject({ method: 'POST', url: `/session/${session.sessionId}/claim`, payload: { checkinId: started.checkinId } });
 check('claiming binds the human to the session', claim.statusCode === 200 && claim.json().alias === 'Daksh');
+// The headset sends {"name": null}; that must pass validation and then stop at the human check, not at a 400.
+const { getSession } = await import('../src/session.js');
+const finalizedSession = getSession(session.sessionId);
+if (finalizedSession) {
+  finalizedSession.human = null;
+  finalizedSession.finalized = { outcome: 'test_pass', rootHash: '0x' + '1'.repeat(64), storageTx: '', storageTxSeq: 0, anchorTx: null, anchorError: null, headHash: '', records: 0, links: { storage: '', anchor: null } };
+  const nullName = await app.inject({ method: 'POST', url: `/session/${session.sessionId}/certificate`, payload: { name: null } });
+  check('a null name passes validation and is stopped by the human check (403), not a 400', nullName.statusCode === 403);
+}
 const noHuman = (await app.inject({ method: 'POST', url: '/session/start', payload: {} })).json() as { sessionId: string };
 const blocked = await app.inject({ method: 'POST', url: `/session/${noHuman.sessionId}/certificate`, payload: {} });
 check('a certificate is refused without a finalized passing test', blocked.statusCode === 409);

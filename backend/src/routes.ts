@@ -27,7 +27,7 @@ const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 const certificateSchema = z.object({
   holder: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
   validityDays: z.number().int().min(1).max(365).default(90),
-  name: z.string().max(40).optional(),
+  name: z.string().max(40).nullish(),
 });
 
 function displayName(name: string | undefined): string {
