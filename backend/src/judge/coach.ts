@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { chat } from '../zerog/client.js';
 import type { Procedure } from '../shared/procedure.js';
 import type { Session } from '../session.js';
@@ -6,6 +7,7 @@ import { modelOutputSchema, type CoachResult, type Observe } from './schema.js';
 
 const SAFE_STOP_LINE = 'Verification unavailable. Do not continue.';
 const REPEAT_WINDOW_MS = 8000;
+const HISTORY_LIMIT = 80;
 
 function trimWords(text: string, max: number): string {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -19,10 +21,10 @@ function parseModelJson(content: string): unknown {
   return JSON.parse(content.slice(start, end + 1));
 }
 
-function safeStop(session: Session, latencyMs: number): CoachResult {
+function safeStop(latencyMs: number): CoachResult {
   return {
     verdict: 'safe_stop',
-    completedSteps: session.tracker.completed,
+    completedSteps: [],
     mistakes: [],
     coachingLine: SAFE_STOP_LINE,
     speak: false,
@@ -33,42 +35,42 @@ function safeStop(session: Session, latencyMs: number): CoachResult {
 }
 
 export async function coach(session: Session, procedure: Procedure, req: Observe): Promise<CoachResult> {
-  for (const a of [...req.actions].sort((x, y) => x.seq - y.seq)) {
-    if (a.seq <= session.lastSeq) continue;
-    session.tracker.apply(a);
+  const fresh = req.actions.filter((a) => a.seq > session.lastSeq).sort((x, y) => x.seq - y.seq);
+
+  const messages = buildMessages(req, {
+    procedure,
+    earlier: session.actions.slice(-HISTORY_LIMIT),
+    fresh,
+    previousCoaching: session.history.slice(-3).map((c) => c.line),
+  });
+
+  let totalMs = 0;
+  let result = await chat({ messages });
+  totalMs += result.latencyMs;
+  if (!result.ok) return safeStop(totalMs);
+  let parsed = parseOutput(result.content);
+
+  if (!parsed) {
+    messages.push({ role: 'assistant', content: result.content });
+    messages.push({
+      role: 'user',
+      content:
+        'That reply was not valid. Reply with the JSON object only. If the verdict is correct or unsafe it must include at least one mistake and a coachingLine; otherwise use ok.',
+    });
+    result = await chat({ messages });
+    totalMs += result.latencyMs;
+    if (!result.ok) return safeStop(totalMs);
+    parsed = parseOutput(result.content);
+    if (!parsed) return safeStop(totalMs);
+  }
+
+  for (const a of fresh) {
+    session.actions.push(a);
     session.lastSeq = a.seq;
   }
-  const violations = session.tracker.pendingViolations;
 
-  const result = await chat({
-    messages: buildMessages(req, {
-      procedure,
-      currentStepId: session.tracker.currentStepId,
-      completed: session.tracker.completed,
-      violations,
-      previousCoaching: session.history.slice(-3).map((c) => c.line),
-    }),
-    maxTokens: 220,
-  });
-  if (!result.ok) return safeStop(session, result.latencyMs);
-
-  let parsed;
-  try {
-    parsed = modelOutputSchema.safeParse(parseModelJson(result.content));
-  } catch {
-    return safeStop(session, result.latencyMs);
-  }
-  if (!parsed.success) return safeStop(session, result.latencyMs);
-
-  session.tracker.clearViolations();
-  let { verdict, mistakes, coachingLine } = parsed.data;
-  if (verdict === 'ok' && violations.length > 0) {
-    verdict = 'correct';
-    mistakes = violations.map((s) => ({ stepId: s.id, code: 'order_violation', explanation: s.rationale }));
-    if (!coachingLine) coachingLine = `${firstTitle(violations)} was done too early. ${violations[0]?.rationale ?? ''}`;
-  }
-  coachingLine = trimWords(coachingLine, 25);
-
+  const { verdict, mistakes } = parsed;
+  const coachingLine = trimWords(parsed.coachingLine, 25);
   const now = Date.now();
   const repeated = session.history.some((c) => c.line === coachingLine && now - c.at < REPEAT_WINDOW_MS);
   const speak = verdict !== 'ok' && coachingLine.length > 0 && !repeated;
@@ -76,16 +78,21 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
 
   return {
     verdict,
-    completedSteps: session.tracker.completed,
+    completedSteps: [],
     mistakes,
     coachingLine,
     speak,
     requestId: result.requestId,
     model: result.model,
-    latencyMs: result.latencyMs,
+    latencyMs: totalMs,
   };
 }
 
-function firstTitle(steps: { title: string }[]): string {
-  return steps[0]?.title ?? 'That step';
+function parseOutput(content: string): z.infer<typeof modelOutputSchema> | null {
+  try {
+    const out = modelOutputSchema.safeParse(parseModelJson(content));
+    return out.success ? out.data : null;
+  } catch {
+    return null;
+  }
 }

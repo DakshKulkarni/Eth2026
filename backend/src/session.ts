@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Tracker } from './judge/tracker.js';
-import type { Procedure } from './shared/procedure.js';
+import type { Action } from './judge/schema.js';
 
 export interface Coaching {
   at: number;
@@ -9,16 +8,16 @@ export interface Coaching {
 
 export interface Session {
   id: string;
-  tracker: Tracker;
   lastSeq: number;
   busy: boolean;
+  actions: Action[];
   history: Coaching[];
 }
 
 const sessions = new Map<string, Session>();
 
-export function createSession(procedure: Procedure): Session {
-  const session: Session = { id: randomUUID(), tracker: new Tracker(procedure), lastSeq: 0, busy: false, history: [] };
+export function createSession(): Session {
+  const session: Session = { id: randomUUID(), lastSeq: 0, busy: false, actions: [], history: [] };
   sessions.set(session.id, session);
   return session;
 }

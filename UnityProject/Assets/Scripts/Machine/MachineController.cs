@@ -14,6 +14,7 @@ namespace MrTrainer.Machine
 
         public event Action<ActionRecord> Accepted;
         public event Action<string, string> Blocked;
+        public event Action<string, string, string> BlockedDetail;
         public event Action<string> CycleFinished;
 
         readonly Dictionary<string, MachineControl> byId = new Dictionary<string, MachineControl>();
@@ -63,6 +64,7 @@ namespace MrTrainer.Machine
                 State.alarmTime = Time.time;
                 State.Raise();
                 if (Blocked != null) Blocked(id, why);
+                if (BlockedDetail != null) BlockedDetail(id, value, why);
                 return false;
             }
             Apply(id, value);

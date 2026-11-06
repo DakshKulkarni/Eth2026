@@ -37,15 +37,20 @@ export const observeSchema = z.object({
 });
 
 export type Observe = z.infer<typeof observeSchema>;
+export type Action = Observe['actions'][number];
 
-export const modelOutputSchema = z.object({
-  verdict: z.enum(['ok', 'correct', 'unsafe']),
-  mistakes: z
-    .array(z.object({ stepId: z.string(), code: z.string(), explanation: z.string() }))
-    .max(3)
-    .default([]),
-  coachingLine: z.string().default(''),
-});
+export const modelOutputSchema = z
+  .object({
+    verdict: z.enum(['ok', 'correct', 'unsafe']),
+    mistakes: z
+      .array(z.object({ stepId: z.string(), code: z.string(), explanation: z.string() }))
+      .max(3)
+      .default([]),
+    coachingLine: z.string().default(''),
+  })
+  .refine((v) => v.verdict === 'ok' || (v.mistakes.length > 0 && v.coachingLine.trim().length > 0), {
+    message: 'correct or unsafe needs at least one mistake and a coaching line',
+  });
 
 export interface Mistake {
   stepId: string;

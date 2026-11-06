@@ -6,8 +6,8 @@ const schema = z.object({
   ZG_ROUTER_URL: z.string().url().default('https://router-api.0g.ai/v1'),
   ZG_API_KEY: z.string().optional(),
   ZG_COACH_MODEL: z.string().default('qwen3.8-flash'),
-  ZG_TIMEOUT_MS: z.coerce.number().int().default(8000),
-  ZG_TTS_MODEL: z.string().default('minimax-speech-2.8-turbo'),
+  ZG_TIMEOUT_MS: z.coerce.number().int().default(12000),
+  ZG_TTS_MODEL: z.string().default('minimax-speech-02-turbo'),
   ZG_TTS_VOICE: z.string().default('alloy'),
 });
 

@@ -15,14 +15,14 @@ namespace MrTrainer.Guidance
         public int StageIndex { get; private set; }
         public bool Locked { get; private set; }
         public bool IsFinished { get; private set; }
+        public bool Hold { get; set; }
 
         public event Action StepChanged;
-        public event Action<StepDef, List<StepDef>> CheckpointReached;
+        public event Action<StepDef> CheckpointReached;
         public event Action<int> StageCompleted;
         public event Action Completed;
 
         HashSet<string> done = new HashSet<string>();
-        readonly List<string> violations = new List<string>();
         HashSet<string> safeDone = new HashSet<string>();
         int safeStage;
 
@@ -62,7 +62,6 @@ namespace MrTrainer.Guidance
             Locked = false;
             IsFinished = false;
             done = new HashSet<string>();
-            violations.Clear();
             TakeSafePoint();
             RaiseStep();
         }
@@ -74,19 +73,16 @@ namespace MrTrainer.Guidance
 
         public void OnAction(ActionRecord r)
         {
-            if (IsFinished || Locked) return;
+            if (IsFinished || Locked || Hold) return;
             StepDef hit = StageSteps.Find(s => !done.Contains(s.id) && Matches(s, r));
             if (hit == null) return;
 
-            bool outOfOrder = hit.forbiddenBefore.Exists(id => !done.Contains(id));
             done.Add(hit.id);
-            if (outOfOrder) violations.Add(hit.id);
 
             if (hit.checkpoint)
             {
                 Locked = true;
-                if (CheckpointReached != null)
-                    CheckpointReached(hit, violations.ConvertAll(id => P.Find(id)));
+                if (CheckpointReached != null) CheckpointReached(hit);
                 return;
             }
             AfterProgress();
@@ -97,7 +93,6 @@ namespace MrTrainer.Guidance
             Locked = false;
             if (pass)
             {
-                violations.Clear();
                 TakeSafePoint();
                 AfterProgress();
                 return;
@@ -105,7 +100,6 @@ namespace MrTrainer.Guidance
             Retries++;
             done = new HashSet<string>(safeDone);
             StageIndex = safeStage;
-            violations.Clear();
             RaiseStep();
         }
 

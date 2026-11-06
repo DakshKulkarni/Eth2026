@@ -20,10 +20,22 @@ namespace MrTrainer.Core
         public ModalPanel modal;
         public ToastHost toasts;
         public GuideFlow flow;
+        public CoachService coach;
+        public FrameCapture frames;
+        public CoachBanner banner;
+        public bool sendFrames = true;
+
+        void Awake()
+        {
+            if (coach == null) coach = gameObject.AddComponent<CoachService>();
+            if (frames == null) frames = gameObject.AddComponent<FrameCapture>();
+            if (banner == null) banner = gameObject.AddComponent<CoachBanner>();
+        }
 
         IEnumerator Start()
         {
             Transform head = rig.centerEyeAnchor;
+            if (OVRManager.instance != null) OVRManager.instance.trackingOriginType = OVRManager.TrackingOrigin.FloorLevel;
             var ui = new UiFactory(theme);
             var procedure = Procedure.Parse(procedureJson.text);
 
@@ -32,8 +44,13 @@ namespace MrTrainer.Core
             highlight.Init(machine, head, stepCard.transform, ui);
             toasts.Init(ui, head, machine, stepCard.transform);
             modal.Init(ui, head);
+            banner.Build(ui, stepCard.transform);
+            frames.Init(head);
+            coach.sendFrames = sendFrames;
+            coach.Init(new ApiClient(Config.BackendUrl), machine, frames, head);
+
             flow.Init(procedure, machine, highlight, stepCard, modal, toasts, placer,
-                new LocalStubCheckpointService(), ui, head);
+                new RemoteCheckpointService(coach), ui, head, coach, banner);
 
             yield return new WaitForSeconds(0.6f);
             placer.Recenter();

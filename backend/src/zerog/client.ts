@@ -36,7 +36,23 @@ function describe(err: unknown): string {
 }
 
 function thinkingOff(model: string): Record<string, unknown> {
-  return model.startsWith('glm') ? { chat_template_kwargs: { enable_thinking: false } } : { enable_thinking: false };
+  if (model.startsWith('glm')) return { chat_template_kwargs: { enable_thinking: false } };
+  if (model.startsWith('qwen') || model.startsWith('deepseek')) return { enable_thinking: false };
+  if (lowEffortClaude(model)) return { reasoning_effort: 'low' };
+  return {};
+}
+
+function lowEffortClaude(model: string): boolean {
+  return model === 'claude-haiku-5.5' || model === 'claude-sonnet-5.5';
+}
+
+function acceptsTemperature(model: string): boolean {
+  return model.startsWith('qwen') || model.startsWith('deepseek') || model.startsWith('glm') || model.startsWith('gpt-4');
+}
+
+export function tokenBudget(model: string): number {
+  if (lowEffortClaude(model)) return 400;
+  return /^gpt-[56]|^claude/.test(model) ? 1500 : 200;
 }
 
 export async function chat(options: ChatOptions): Promise<ZgResult> {
@@ -48,8 +64,8 @@ export async function chat(options: ChatOptions): Promise<ZgResult> {
   const body = {
     model,
     messages: options.messages,
-    temperature: options.temperature ?? 0.2,
-    max_tokens: options.maxTokens ?? 300,
+    ...(acceptsTemperature(model) ? { temperature: options.temperature ?? 0.2 } : {}),
+    max_tokens: options.maxTokens ?? tokenBudget(model),
     ...(options.json ? { response_format: { type: 'json_object' } } : {}),
     ...thinkingOff(model),
   };

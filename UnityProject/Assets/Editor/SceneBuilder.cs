@@ -64,6 +64,9 @@ namespace MrTrainer.Editor
             context.toasts = sys.AddComponent<ToastHost>();
             context.modal = sys.AddComponent<ModalPanel>();
             context.flow = sys.AddComponent<GuideFlow>();
+            context.coach = sys.AddComponent<CoachService>();
+            context.frames = sys.AddComponent<FrameCapture>();
+            context.banner = sys.AddComponent<CoachBanner>();
 
             var card = new GameObject("StepCard");
             card.transform.SetParent(root.transform, false);

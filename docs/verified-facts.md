@@ -18,6 +18,18 @@ Read on 2026-11-05. Items marked UNRESOLVED need a human decision or a first liv
 - STT: `POST /v1/audio/transcriptions`, multipart with `file`, `model`, optional `response_format` (json|text|srt|verbose_json|vtt), `language`, `prompt`, `temperature`. JSON reply has `text`. The docs example writes the model as `openai/whisper-large-v3`, the live list says `whisper-large-v3`: use the live ID.
 - UNRESOLVED: TTS endpoint path and request shape (not documented; likely `/v1/audio/speech`, unconfirmed). Request ID location on STT/TTS responses. Free-tier or deposit needed before the first call. Needs a key from pc.0g.ai to test.
 
+### Verified live (2026-11-06, with a real key)
+
+- Chat: `POST {router}/chat/completions` works. Success replies carry `x_0g_trace.request_id`; error replies carry a top-level `request_id`. `enable_thinking: false` (top level) is accepted by `qwen3.8-flash`.
+- `qwen3.8-flash` does NOT support `response_format: json_object` (HTTP 400 `model_not_capable`). Ask for JSON in the prompt and validate with a schema.
+- Latency: tiny prompt 2.4 s; coach prompt with full SOP 4.4 s; same with a 512x288 JPEG frame 3.6 s.
+- Image input: base64 `data:image/jpeg;base64,...` in an `image_url` part works on `qwen3.8-flash`.
+- Speech: `POST {router}/audio/speech` with `{model, input, voice, response_format:"wav"}` returns `audio/wav`; request IDs are in the `x-request-id` response header. `minimax-speech-02-turbo` about 4.6 s, `-2.6-turbo` about 4.6 s, `-2.8-turbo` about 6 s.
+- Coach model benchmark (same deliberate-mistake request, 2 runs each): `qwen3.5-flash` about 2.7 s with 9 to 11 word lines (chosen), `qwen3.8-flash` about 3.6 s, `gemini-3.1-flash-lite` about 3.2 to 4.2 s, `glm-5.3-flash` failed with the strict JSON schema (safe_stop).
+- Coach model benchmark v2 (4 scenarios: mistake, correct stage, harmless reorder, unclamped door; 0G is the only judge, actions given as readable lines): `qwen3.8-flash` 12 of 12 correct over 3 runs, 1.3 to 3.9 s, price x1 (chosen); `claude-sonnet-5.5` 8 of 8, 2.6 to 3.8 s, x10; `claude-opus-5.5` 4 of 4, 4.2 to 5.8 s, x21; `claude-haiku-5.5` 11 of 12 (one safe_stop from an invalid reply), 2.4 to 5.5 s, about x0.6; `gpt-6.1-terra` 4 of 4, 4 to 7 s, x5; `gpt-5.5` 4 of 4, 4 to 12 s, x26; `gpt-5.2` 2 of 4 (false alarms); `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini` and `gpt-5.6-luna` weaker or too slow. Small sample, not a proof.
+- Claude 5.5 models on `/chat/completions` spend the output budget on hidden reasoning (empty content, `finish_reason: length`). Fix: `reasoning_effort: "low"` with `max_tokens` 400 for haiku-5.5 and sonnet-5.5; a 1500 budget for other Claude and for gpt-5/6 models. Claude and GPT models reject nothing else we send, but do not get `enable_thinking` or `temperature`.
+- Typical end to end from mistake to spoken correction: about 6 to 7 s (judge about 2.7 s, then speech about 3 to 4 s).
+
 ## 0G Storage and Chain
 
 - Package `@0gfoundation/0g-storage-ts-sdk` with `ethers`.

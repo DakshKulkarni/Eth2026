@@ -20,16 +20,25 @@ namespace MrTrainer.Guidance
         ICheckpointService judge;
         UiFactory ui;
         Transform head;
+        CoachService coach;
+        CoachBanner banner;
 
         readonly ActionRecorder recorder = new ActionRecorder();
         ProcedureRunner runner;
         MachineState safeMachine;
         bool hintVisible;
+        bool offlineShown;
 
         public void Init(Procedure proc, MachineController controller, HighlightService highlighter, StepCardPanel stepCard,
             ModalPanel modalPanel, ToastHost toastHost, MachinePlacer machinePlacer, ICheckpointService service,
-            UiFactory factory, Transform headTransform)
+            UiFactory factory, Transform headTransform, CoachService coachService, CoachBanner coachBanner)
         {
+            coach = coachService;
+            banner = coachBanner;
+            coach.Correction += banner.Show;
+            coach.AllClear += banner.Hide;
+            coach.Checking += banner.SetChecking;
+            coach.Offline += OnOffline;
             procedure = proc;
             machine = controller;
             highlight = highlighter;
@@ -76,7 +85,23 @@ namespace MrTrainer.Guidance
             safeMachine = machine.Snapshot();
             recorder.Reset();
             hintVisible = false;
+            offlineShown = false;
+            runner = null;
+            banner.Hide();
+            StartCoroutine(Boot(mode));
+        }
 
+        IEnumerator Boot(TrainingMode mode)
+        {
+            bool ok = false;
+            yield return coach.StartSession(mode, r => ok = r);
+            if (!ok)
+            {
+                ShowOffline("Could not reach the AI technician at " + Config.BackendUrl + ".", () => Begin(mode));
+                yield break;
+            }
+
+            banner.SetChecking(false);
             runner = new ProcedureRunner(procedure);
             runner.StepChanged += OnStepChanged;
             runner.CheckpointReached += OnCheckpoint;
@@ -86,6 +111,53 @@ namespace MrTrainer.Guidance
 
             toasts.Hud(mode == TrainingMode.Learn ? "Learn mode: follow the highlights" : "Test mode: no highlights",
                 mode == TrainingMode.Learn ? ui.T.accent : ui.T.warning);
+        }
+
+        void OnOffline(string message)
+        {
+            if (offlineShown) return;
+            offlineShown = true;
+            if (runner != null) runner.Hold = true;
+            ShowOffline(message, () => StartCoroutine(Reconnect()));
+        }
+
+        IEnumerator Reconnect()
+        {
+            bool ok = false;
+            yield return coach.Reconnect(r => ok = r);
+            if (ok)
+            {
+                offlineShown = false;
+                if (runner != null) runner.Hold = false;
+                toasts.Hud("AI technician back online", ui.T.success);
+                yield break;
+            }
+            ShowOffline("Still unable to reach the AI technician.", () => StartCoroutine(Reconnect()));
+        }
+
+        void ShowOffline(string message, System.Action retry)
+        {
+            ProceduralSfx.Play(ProceduralSfx.Error, head.position);
+            modal.Show(new ModalSpec
+            {
+                title = "Do not continue. Ask a supervisor.",
+                chip = "SAFE STOP",
+                accent = ui.T.danger,
+                body = message + " Nothing unlocks while the AI technician is offline.",
+                buttons = new List<ModalButton>
+                {
+                    new ModalButton
+                    {
+                        label = "Retry",
+                        color = ui.T.accent,
+                        click = () =>
+                        {
+                            modal.Hide();
+                            retry();
+                        }
+                    }
+                }
+            });
         }
 
         void OnAction(ActionRecord r)
@@ -119,24 +191,17 @@ namespace MrTrainer.Guidance
                 highlight.SetTarget(step.targetControl, runner.StepNumberInStage + ". " + step.title);
         }
 
-        void OnCheckpoint(StepDef step, List<StepDef> violations)
+        void OnCheckpoint(StepDef step)
         {
             highlight.Clear();
             card.SetBusy("Checking with the AI technician...");
-            StartCoroutine(RunJudge(step, violations));
+            StartCoroutine(RunJudge(step));
         }
 
-        IEnumerator RunJudge(StepDef step, List<StepDef> violations)
+        IEnumerator RunJudge(StepDef step)
         {
             yield return new WaitUntil(() => !machine.simulator.Homing && !machine.State.Running);
-            var context = new CheckpointContext
-            {
-                request = recorder.Build(step.id, machine.State),
-                step = step,
-                violations = violations,
-                completed = runner.CompletedIds
-            };
-            yield return StartCoroutine(Judge(context));
+            yield return StartCoroutine(Judge(new CheckpointContext { step = step }));
         }
 
         IEnumerator Judge(CheckpointContext context)
@@ -210,6 +275,8 @@ namespace MrTrainer.Guidance
         void OnCompleted()
         {
             highlight.Clear();
+            coach.StopSession();
+            banner.Hide();
             bool test = runner.Mode == TrainingMode.Test;
             var spec = new ModalSpec();
             if (!test)

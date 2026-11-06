@@ -57,6 +57,7 @@ namespace MrTrainer.Core
 
     public class ActionRecord
     {
+        public int seq;
         public float t;
         public string control;
         public string action;
@@ -106,8 +107,27 @@ namespace MrTrainer.Core
         public List<string> completedSteps = new List<string>();
         public List<Mistake> mistakes = new List<Mistake>();
         public string coachingLine;
+        public bool speak;
         public string requestId;
         public string model;
         public int latencyMs;
+    }
+
+    public class ObserveRequest
+    {
+        public string trigger;
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string checkpointId;
+        public string mode;
+        public MachineDto machine;
+        public List<ActionRecord> actions = new List<ActionRecord>();
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string frame;
+    }
+
+    public class SessionStartResponse
+    {
+        public string sessionId;
+        public string model;
     }
 }
