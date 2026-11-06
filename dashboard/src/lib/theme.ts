@@ -1,14 +1,17 @@
 import { useSyncExternalStore } from 'react';
 
 export const THEMES = [
-  { id: 'aurora', label: 'Aurora', swatch: ['#b794ff', '#2b1270'] },
-  { id: 'forge', label: 'Forge', swatch: ['#ffb43a', '#5c3604'] },
-  { id: 'mint', label: 'Mint', swatch: ['#4be59a', '#054b3a'] },
+  { id: 'graphite', label: 'Graphite', swatch: ['#f5a800', '#141615'] },
+  { id: 'blueprint', label: 'Blueprint', swatch: ['#6cc6ff', '#0c1c2b'] },
+  { id: 'paper', label: 'Paper', swatch: ['#c47f00', '#f8f7f3'] },
 ] as const;
 export type ThemeId = (typeof THEMES)[number]['id'];
 
 const listeners = new Set<() => void>();
-let current: ThemeId = (document.documentElement.dataset.theme as ThemeId) || 'aurora';
+const known = THEMES.map((t) => t.id as string);
+const initial = document.documentElement.dataset.theme ?? '';
+let current: ThemeId = (known.includes(initial) ? initial : 'graphite') as ThemeId;
+document.documentElement.dataset.theme = current;
 
 export function setTheme(id: ThemeId): void {
   current = id;
