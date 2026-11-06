@@ -160,6 +160,11 @@ namespace MrTrainer.Core
         public string expiresAt;
         public string verdict;
         public string evidence;
+        public string issuedAt;
+        public string alias;
+        [JsonProperty("class")]
+        public string className;
+        public string description;
     }
 
     public class FinalizeRequest

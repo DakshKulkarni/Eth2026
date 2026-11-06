@@ -49,9 +49,9 @@ namespace MrTrainer.Core
             return Get("/credential/" + label, done, 30);
         }
 
-        public IEnumerator IssueCertificate(string sessionId, Action<ApiResult<CertificateResponse>> done)
+        public IEnumerator IssueCertificate(string sessionId, string name, Action<ApiResult<CertificateResponse>> done)
         {
-            return Post("/session/" + sessionId + "/certificate", new { }, done, 150);
+            return Post("/session/" + sessionId + "/certificate", new { name }, done, 150);
         }
 
         public IEnumerator Finalize(string sessionId, string outcome, Action<ApiResult<FinalizeResponse>> done)

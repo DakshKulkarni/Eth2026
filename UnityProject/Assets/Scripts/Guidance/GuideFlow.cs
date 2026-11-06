@@ -15,6 +15,8 @@ namespace MrTrainer.Guidance
         HighlightService highlight;
         StepCardPanel card;
         ModalPanel modal;
+        public NamePadPanel namePad;
+        public CertificatePanel certPanel;
         ToastHost toasts;
         MachinePlacer placer;
         ICheckpointService judge;
@@ -322,6 +324,13 @@ namespace MrTrainer.Guidance
             ApiResult<CredentialResponse> credential = null;
             if (passed && saved.Ok)
             {
+                string certName = null;
+                bool named = false;
+                if (namePad != null)
+                {
+                    namePad.Show("Name your certificate", n => { certName = n; named = true; });
+                    yield return new WaitUntil(() => named);
+                }
                 modal.Show(new ModalSpec
                 {
                     title = "Issuing your ENS certificate",
@@ -329,7 +338,7 @@ namespace MrTrainer.Guidance
                     accent = ui.T.accent,
                     body = "Writing the certificate to ENS on Sepolia and checking it live. This can take up to a minute."
                 });
-                yield return api.IssueCertificate(coach.SessionId, r => certificate = r);
+                yield return api.IssueCertificate(coach.SessionId, certName, r => certificate = r);
                 if (certificate.Ok)
                     yield return api.Credential(LabelOf(certificate.value.name), r => credential = r);
             }
@@ -364,8 +373,45 @@ namespace MrTrainer.Guidance
             }
             AddEvidence(spec, saved);
             if (passed) AddCertificate(spec, saved.Ok, certificate, credential);
+            if (passed && saved.Ok && certificate != null && certificate.Ok && certPanel != null)
+                spec.buttons.Insert(0, new ModalButton
+                {
+                    label = "View certificate",
+                    color = ui.T.success,
+                    click = () => ViewCertificate(spec, saved.value, certificate.value, credential != null && credential.Ok ? credential.value : null)
+                });
             ProceduralSfx.Play(ProceduralSfx.Success, head.position);
             modal.Show(spec);
+        }
+
+        void ViewCertificate(ModalSpec back, FinalizeResponse saved, CertificateResponse cert, CredentialResponse live)
+        {
+            var view = new CertificateView
+            {
+                alias = live != null ? live.alias : null,
+                name = cert.name,
+                valid = live != null && live.valid,
+                reason = live != null ? live.reason : "not checked",
+                dates = "Issued " + (live != null && !string.IsNullOrEmpty(live.issuedAt) ? DateOnly(live.issuedAt) : "today") +
+                        "   Valid until " + DateOnly(cert.expiresAt),
+                verdict = live != null && !string.IsNullOrEmpty(live.verdict) ? live.verdict : "test_pass",
+                className = live != null ? live.className : null,
+                issuedAt = live != null ? live.issuedAt : null,
+                evidence = live != null && !string.IsNullOrEmpty(live.evidence) ? live.evidence : "0g://" + saved.rootHash,
+                anchorTx = saved.anchorTx,
+                issueTx = cert.issueTx,
+                recordsTx = cert.recordsTx
+            };
+            modal.Hide();
+            certPanel.Show(view, callback => RecheckCertificate(cert.name, callback), () => modal.Show(back));
+        }
+
+        IEnumerator RecheckCertificate(string name, System.Action<bool, string> done)
+        {
+            ApiResult<CredentialResponse> result = null;
+            yield return api.Credential(LabelOf(name), r => result = r);
+            if (result.Ok) done(result.value.valid, result.value.reason);
+            else done(false, "unreachable");
         }
 
         static void AddCertificate(ModalSpec spec, bool recordSaved, ApiResult<CertificateResponse> certificate,
