@@ -74,6 +74,8 @@ namespace MrTrainer.Guidance
             dirty = true;
         }
 
+        public string SessionId { get { return sessionId; } }
+
         public IEnumerator StartSession(TrainingMode trainingMode, Action<bool> done)
         {
             active = false;

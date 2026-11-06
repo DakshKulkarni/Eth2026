@@ -39,6 +39,21 @@ namespace MrTrainer.Core
             return Post("/session/" + sessionId + "/observe", request, done);
         }
 
+        public IEnumerator Passport(string label, Action<ApiResult<PassportResponse>> done)
+        {
+            return Get("/machine/" + label, done, 8);
+        }
+
+        public IEnumerator Credential(string label, Action<ApiResult<CredentialResponse>> done)
+        {
+            return Get("/credential/" + label, done, 30);
+        }
+
+        public IEnumerator IssueCertificate(string sessionId, Action<ApiResult<CertificateResponse>> done)
+        {
+            return Post("/session/" + sessionId + "/certificate", new { }, done, 150);
+        }
+
         public IEnumerator Finalize(string sessionId, string outcome, Action<ApiResult<FinalizeResponse>> done)
         {
             return Post("/session/" + sessionId + "/finalize", new FinalizeRequest { outcome = outcome }, done, 120);
@@ -72,6 +87,29 @@ namespace MrTrainer.Core
                 req.downloadHandler = new DownloadHandlerBuffer();
                 req.SetRequestHeader("Content-Type", "application/json");
                 req.timeout = timeoutSeconds > 0 ? timeoutSeconds : Config.TimeoutSeconds;
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success)
+                {
+                    done(Fail<T>(req));
+                    yield break;
+                }
+                try
+                {
+                    var value = JsonConvert.DeserializeObject<T>(req.downloadHandler.text);
+                    done(value == null ? Error<T>("invalid", "empty response") : new ApiResult<T> { value = value });
+                }
+                catch (JsonException)
+                {
+                    done(Error<T>("invalid", "response was not valid JSON"));
+                }
+            }
+        }
+
+        IEnumerator Get<T>(string path, Action<ApiResult<T>> done, int timeoutSeconds)
+        {
+            using (var req = UnityWebRequest.Get(baseUrl + path))
+            {
+                req.timeout = timeoutSeconds;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success)
                 {

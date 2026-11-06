@@ -11,13 +11,17 @@ function message(err: unknown): string {
   return err instanceof Error ? err.message.slice(0, 200) : 'unknown error';
 }
 
-export async function uploadBundle(bundle: EpisodeBundle): Promise<UploadResult> {
+export function uploadBundle(bundle: EpisodeBundle): Promise<UploadResult> {
+  return uploadBytes(new TextEncoder().encode(JSON.stringify(bundle)));
+}
+
+export async function uploadBytes(bytes: Uint8Array): Promise<UploadResult> {
   const problem = keyProblem();
   if (problem || !config.AGENT_PRIVATE_KEY) return { ok: false, reason: problem ?? 'AGENT_PRIVATE_KEY is not set' };
   try {
     const signer = new ethers.Wallet(config.AGENT_PRIVATE_KEY, new ethers.JsonRpcProvider(config.ZG_RPC_URL));
     const indexer = new Indexer(config.ZG_INDEXER_URL);
-    const file = new MemData(new TextEncoder().encode(JSON.stringify(bundle)));
+    const file = new MemData(bytes);
     const [, treeError] = await file.merkleTree();
     if (treeError) return { ok: false, reason: `merkle tree: ${message(treeError)}` };
 

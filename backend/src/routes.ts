@@ -4,6 +4,9 @@ import { anchorSession } from './chain/anchor.js';
 import { config, keyProblem } from './config.js';
 import { buildBundle, OUTCOMES } from './episode/bundle.js';
 import { sha256 } from './episode/chain.js';
+import { loadDeployment } from './ens/deployment.js';
+import { issueCertificate, revokeCertificate } from './ens/issuer.js';
+import { checkCredential, getPassport, LABEL_PATTERN } from './ens/read.js';
 import { explorer } from './explorer.js';
 import { uploadBundle } from './episode/storage.js';
 import { coach } from './judge/coach.js';
@@ -15,6 +18,10 @@ import { speak } from './zerog/speech.js';
 const procedure = loadProcedure();
 const ttsSchema = z.object({ text: z.string().min(1).max(400), sessionId: z.string().optional() });
 const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
+const certificateSchema = z.object({
+  holder: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
+  validityDays: z.number().int().min(1).max(365).default(90),
+});
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/health', async () => ({
@@ -80,6 +87,57 @@ export function registerRoutes(app: FastifyInstance): void {
     } finally {
       session.busy = false;
     }
+  });
+
+  app.get<{ Params: { label: string } }>('/machine/:label', async (req, reply) => {
+    if (!LABEL_PATTERN.test(req.params.label)) return reply.code(400).send({ error: 'invalid_label' });
+    return getPassport(req.params.label);
+  });
+
+  app.get<{ Params: { label: string } }>('/credential/:label', async (req, reply) => {
+    if (!LABEL_PATTERN.test(req.params.label) || !req.params.label.startsWith('cert-')) {
+      return reply.code(400).send({ error: 'not_a_certificate_label' });
+    }
+    return checkCredential(req.params.label);
+  });
+
+  app.post<{ Params: { label: string } }>('/credential/:label/revoke', async (req, reply) => {
+    if (config.ADMIN_TOKEN && req.headers['x-admin-token'] !== config.ADMIN_TOKEN) {
+      return reply.code(401).send({ error: 'admin_token_required' });
+    }
+    if (!LABEL_PATTERN.test(req.params.label)) return reply.code(400).send({ error: 'invalid_label' });
+    const result = await revokeCertificate(req.params.label);
+    if (!result.ok) return reply.code(502).send({ error: 'revoke_failed', reason: result.reason });
+    return { revoked: true, revokeTx: result.revokeTx, link: explorer.sepoliaTx(result.revokeTx), credential: await checkCredential(req.params.label) };
+  });
+
+  app.post<{ Params: { id: string } }>('/session/:id/certificate', async (req, reply) => {
+    const session = getSession(req.params.id);
+    if (!session) return reply.code(404).send({ error: 'unknown_session' });
+    if (session.certificate) return session.certificate;
+    if (session.finalized?.outcome !== 'test_pass') {
+      return reply.code(409).send({ error: 'not_eligible', reason: 'a certificate needs a finalized session with outcome test_pass' });
+    }
+    const body = certificateSchema.safeParse(req.body ?? {});
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+
+    const issued = await issueCertificate({
+      label: `cert-${session.id.slice(0, 8)}`,
+      holder: body.data.holder ?? loadDeployment().issuer,
+      validityDays: body.data.validityDays,
+      evidenceRoot: session.finalized.rootHash,
+      outcome: session.finalized.outcome,
+    });
+    if (!issued.ok) return reply.code(502).send({ error: 'issue_failed', reason: issued.reason });
+    session.certificate = {
+      name: issued.name,
+      holder: body.data.holder ?? loadDeployment().issuer,
+      expiresAt: issued.expiresAt,
+      issueTx: issued.issueTx,
+      recordsTx: issued.recordsTx,
+      links: { issueTx: explorer.sepoliaTx(issued.issueTx), recordsTx: explorer.sepoliaTx(issued.recordsTx) },
+    };
+    return session.certificate;
   });
 
   app.post<{ Params: { id: string } }>('/session/:id/finalize', async (req, reply) => {

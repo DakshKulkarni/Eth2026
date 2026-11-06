@@ -131,6 +131,37 @@ namespace MrTrainer.Core
         public string model;
     }
 
+    public class PassportResponse
+    {
+        public string name;
+        public bool registered;
+        public string owner;
+        public string expiresAt;
+        public string model;
+        public string procedureRootHash;
+        public string guide;
+        public string guideVersion;
+    }
+
+    public class CertificateResponse
+    {
+        public string name;
+        public string holder;
+        public string expiresAt;
+        public string issueTx;
+        public string recordsTx;
+    }
+
+    public class CredentialResponse
+    {
+        public string name;
+        public bool valid;
+        public string reason;
+        public string expiresAt;
+        public string verdict;
+        public string evidence;
+    }
+
     public class FinalizeRequest
     {
         public string outcome;

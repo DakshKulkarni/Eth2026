@@ -1,0 +1,15 @@
+{
+  "issuer": "0x9fe0a744D928510A43D170c7f50e0f0e48754762",
+  "resolver": "0xD78075b4A8722064B4d41202E5dC1944709FC3B9",
+  "userRegistry": "0x4bFa2E837e3ffd84358B2B6632ECE3aE12197999",
+  "linked": true,
+  "registrar": "0xC2144a25038786e7F9abB7935d1E4adBE3Edb5ee",
+  "rolesGranted": true,
+  "setterRoles": true,
+  "procedureRoot": "0x2384662932234e5d389e2c66b79d86dafee463f8a10c33f49f8c655aedaf540c",
+  "names": [
+    "cnc-01",
+    "guide-cnc"
+  ],
+  "recordsSet": true
+}

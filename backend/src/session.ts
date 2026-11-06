@@ -20,7 +20,17 @@ export interface Finalized {
   links: { storage: string; anchor: string | null };
 }
 
+export interface Certificate {
+  name: string;
+  holder: string;
+  expiresAt: string;
+  issueTx: string;
+  recordsTx: string;
+  links: { issueTx: string; recordsTx: string };
+}
+
 export interface Session {
+  certificate: Certificate | null;
   id: string;
   startedAt: string;
   lastSeq: number;
@@ -43,6 +53,7 @@ export function createSession(): Session {
     history: [],
     log: new EpisodeLog(),
     finalized: null,
+    certificate: null,
   };
   sessions.set(session.id, session);
   return session;

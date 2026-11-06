@@ -22,6 +22,7 @@ namespace MrTrainer.Guidance
         Transform head;
         CoachService coach;
         CoachBanner banner;
+        ApiClient api;
 
         readonly ActionRecorder recorder = new ActionRecorder();
         ProcedureRunner runner;
@@ -31,8 +32,10 @@ namespace MrTrainer.Guidance
 
         public void Init(Procedure proc, MachineController controller, HighlightService highlighter, StepCardPanel stepCard,
             ModalPanel modalPanel, ToastHost toastHost, MachinePlacer machinePlacer, ICheckpointService service,
-            UiFactory factory, Transform headTransform, CoachService coachService, CoachBanner coachBanner)
+            UiFactory factory, Transform headTransform, CoachService coachService, CoachBanner coachBanner,
+            ApiClient apiClient)
         {
+            api = apiClient;
             coach = coachService;
             banner = coachBanner;
             coach.Correction += banner.Show;
@@ -62,7 +65,15 @@ namespace MrTrainer.Guidance
 
         public void ShowWelcome()
         {
-            modal.Show(new ModalSpec
+            StartCoroutine(Welcome());
+        }
+
+        IEnumerator Welcome()
+        {
+            ApiResult<PassportResponse> passport = null;
+            yield return api.Passport(Config.MachineLabel, r => passport = r);
+
+            var spec = new ModalSpec
             {
                 title = "MR Machine Trainer",
                 chip = "WELCOME",
@@ -73,7 +84,19 @@ namespace MrTrainer.Guidance
                     new ModalButton { label = "Learn mode", color = ui.T.accent, click = () => Begin(TrainingMode.Learn) },
                     new ModalButton { label = "Test mode", color = ui.T.warning, click = () => Begin(TrainingMode.Test) }
                 }
-            });
+            };
+            if (passport.Ok && passport.value.registered)
+            {
+                var p = passport.value;
+                spec.bullets.Add("Machine passport from ENS: " + p.name);
+                spec.bullets.Add("Model " + p.model + ", guide v" + p.guideVersion);
+                spec.bullets.Add("Procedure on 0G: " + Short(p.procedureRootHash));
+            }
+            else
+            {
+                spec.bullets.Add("ENS passport unavailable: " + (passport.Ok ? "name is not registered" : passport.error.message));
+            }
+            modal.Show(spec);
         }
 
         void Begin(TrainingMode mode)
@@ -294,6 +317,23 @@ namespace MrTrainer.Guidance
             yield return coach.Finalize(outcome, r => saved = r);
             coach.StopSession();
 
+            bool passed = test && runner.TestPassed;
+            ApiResult<CertificateResponse> certificate = null;
+            ApiResult<CredentialResponse> credential = null;
+            if (passed && saved.Ok)
+            {
+                modal.Show(new ModalSpec
+                {
+                    title = "Issuing your ENS certificate",
+                    chip = "ENS",
+                    accent = ui.T.accent,
+                    body = "Writing the certificate to ENS on Sepolia and checking it live. This can take up to a minute."
+                });
+                yield return api.IssueCertificate(coach.SessionId, r => certificate = r);
+                if (certificate.Ok)
+                    yield return api.Credential(LabelOf(certificate.value.name), r => credential = r);
+            }
+
             var spec = new ModalSpec();
             if (!test)
             {
@@ -309,8 +349,7 @@ namespace MrTrainer.Guidance
                 spec.title = "Test passed";
                 spec.chip = "PASSED";
                 spec.accent = ui.T.success;
-                spec.body = "Hints used: " + runner.Hints + " of " + procedure.hintLimit +
-                            ". No checkpoint retries. Certificate issuance needs the backend, which is not connected yet.";
+                spec.body = "Hints used: " + runner.Hints + " of " + procedure.hintLimit + ". No checkpoint retries.";
                 spec.buttons.Add(new ModalButton { label = "Restart", color = ui.T.accent, click = () => Begin(TrainingMode.Test) });
             }
             else
@@ -324,8 +363,44 @@ namespace MrTrainer.Guidance
                 spec.buttons.Add(new ModalButton { label = "Retry test", color = ui.T.warning, click = () => Begin(TrainingMode.Test) });
             }
             AddEvidence(spec, saved);
+            if (passed) AddCertificate(spec, saved.Ok, certificate, credential);
             ProceduralSfx.Play(ProceduralSfx.Success, head.position);
             modal.Show(spec);
+        }
+
+        static void AddCertificate(ModalSpec spec, bool recordSaved, ApiResult<CertificateResponse> certificate,
+            ApiResult<CredentialResponse> credential)
+        {
+            if (!recordSaved)
+            {
+                spec.bullets.Add("ENS certificate NOT issued: the training record was not saved first.");
+                return;
+            }
+            if (certificate == null || !certificate.Ok)
+            {
+                spec.bullets.Add("ENS certificate NOT issued: " + (certificate == null ? "no response" : certificate.error.message));
+                return;
+            }
+            var c = certificate.value;
+            spec.bullets.Add("ENS certificate: " + c.name);
+            spec.bullets.Add("Valid until " + DateOnly(c.expiresAt));
+            if (credential != null && credential.Ok)
+                spec.bullets.Add("Live ENS check: " + (credential.value.valid ? "VALID" : "NOT VALID (" + credential.value.reason + ")"));
+        }
+
+        static string LabelOf(string name)
+        {
+            int dot = name.IndexOf('.');
+            return dot > 0 ? name.Substring(0, dot) : name;
+        }
+
+        static string DateOnly(string iso)
+        {
+            System.DateTime parsed;
+            return System.DateTime.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AdjustToUniversal, out parsed)
+                ? parsed.ToString("yyyy-MM-dd")
+                : iso;
         }
 
         static void AddEvidence(ModalSpec spec, ApiResult<FinalizeResponse> saved)

@@ -17,6 +17,10 @@
     "smoke:observe": "tsx scripts/smoke-observe.ts",
     "smoke:episode": "tsx scripts/smoke-episode.ts",
     "smoke:evidence": "tsx --env-file-if-exists=.env scripts/smoke-evidence.ts",
+    "smoke:ens-scope": "tsx --env-file-if-exists=.env scripts/smoke-ens-scope.ts",
+    "smoke:ens": "tsx --env-file-if-exists=.env scripts/smoke-ens.ts",
+    "ens:setup": "tsx --env-file-if-exists=.env scripts/ens-setup.ts",
+    "ens:status": "tsx --env-file-if-exists=.env scripts/ens-status.ts",
     "wallet:new": "tsx scripts/new-wallet.ts",
     "compile:registry": "tsx scripts/compile-registry.ts",
     "deploy:registry": "tsx --env-file-if-exists=.env scripts/deploy-registry.ts"
@@ -26,6 +30,7 @@
     "ethers": "^6.13.1",
     "fastify": "^5.0.0",
     "solc": "^0.8.38",
+    "viem": "^2.57.16",
     "zod": "^3.23.8"
   },
   "devDependencies": {
