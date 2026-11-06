@@ -94,21 +94,21 @@ export function Verify() {
   return (
     <div className="grid gap-5">
       <Plate still className="p-5 md:p-6">
-        <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Verify a licence</p>
-        <h2 className="display mt-2 max-w-2xl text-[clamp(1.8rem,4vw,3rem)] font-bold">Check any operator licence, without asking us.</h2>
+        <p className="text-[15px] font-semibold">Verify a licence</p>
+        <h2 className="display mt-2 max-w-2xl text-[clamp(1.8rem,4vw,3rem)] font-semibold">Check any operator licence, without asking us.</h2>
         <form onSubmit={submit} className="mt-5 flex max-w-2xl gap-2">
           <label className="relative flex-1">
             <span className="sr-only">Licence name</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="d1-cert  or  d1-cert.smartician.eth" spellCheck={false} autoCapitalize="none" className="h-12 w-full border border-line bg-panel-2 pl-10 pr-3 font-mono text-[14px] outline-none transition-colors focus:border-accent" style={{ borderRadius: 4 }} />
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="d1-cert  or  d1-cert.smartician.eth" spellCheck={false} autoCapitalize="none" className="h-12 w-full bg-panel-2 pl-10 pr-3 font-mono text-[14px] outline-none transition-colors focus:border-accent" style={{ borderRadius: 12 }} />
           </label>
-          <button type="submit" className="h-12 bg-accent px-5 font-mono text-[12.5px] font-medium text-accent-ink" style={{ borderRadius: 4 }}>Verify</button>
+          <button type="submit" className="h-12 bg-accent px-5 font-mono text-[12.5px] font-medium text-accent-ink" style={{ borderRadius: 12 }}>Verify</button>
         </form>
         {certs.data && certs.data.certificates.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="label">Recent</span>
             {certs.data.certificates.slice(0, 5).map((x) => (
-              <Link key={x.label} to={`/verify/${x.label}`} className={cn('border border-line bg-panel-2 px-2.5 py-1 font-mono text-[12px] transition-colors hover:border-accent', x.label === label && 'border-accent text-accent')} style={{ borderRadius: 3 }}>{x.label}</Link>
+              <Link key={x.label} to={`/verify/${x.label}`} className={cn('bg-panel-2 px-2.5 py-1 font-mono text-[12px] transition-colors hover:border-accent', x.label === label && 'border-accent text-accent')} style={{ borderRadius: 8 }}>{x.label}</Link>
             ))}
           </div>
         )}
@@ -118,7 +118,7 @@ export function Verify() {
 
       {label && LABEL.test(label) && (
         <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <Plate still className="p-5 md:p-6" style={{ borderTop: `3px solid ${tone}` }}>
+          <Plate still className="p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="label">Verification report</p>
@@ -126,7 +126,7 @@ export function Verify() {
               </div>
               {c && <StatusBadge reason={c.reason} />}
             </div>
-            <motion.p key={verdict} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="display mt-4 text-[clamp(2.4rem,6vw,4rem)] font-bold leading-none" style={{ color: tone }}>{verdict}</motion.p>
+            <motion.p key={verdict} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="display mt-4 text-[clamp(2.4rem,6vw,4rem)] font-semibold leading-none" style={{ color: tone }}>{verdict}</motion.p>
 
             <ul className="mt-6">
               <AnimatePresence initial={false}>
@@ -143,7 +143,7 @@ export function Verify() {
             </ul>
 
             {c && c.valid && (
-              <dl className="mt-4 grid gap-px border border-line bg-line sm:grid-cols-3" style={{ borderRadius: 4, overflow: 'hidden' }}>
+              <dl className="mt-4 grid gap-px bg-line sm:grid-cols-3" style={{ borderRadius: 12, overflow: 'hidden' }}>
                 {[['Name on licence', c.alias ?? '—'], ['Class', c.class ?? '—'], ['Issued', c.issuedAt ? new Date(c.issuedAt).toLocaleString([], { hour12: false }) : '—']].map(([k, v]) => (
                   <div key={k} className="bg-panel px-3 py-2.5"><dt className="label">{k}</dt><dd className="mt-1 font-mono text-[13px]">{v}</dd></div>
                 ))}
@@ -152,8 +152,8 @@ export function Verify() {
             {c?.description && <p className="mt-3 text-[12.5px] text-muted">{c.description}</p>}
             {root && (
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link to={`/0g?root=${root}`} className="label flex items-center gap-1.5 border border-line px-3 py-2 hover:!text-ink" style={{ borderRadius: 4 }}>Replay the session <ArrowUpRight className="size-3" /></Link>
-                <Link to="/ens" className="label flex items-center gap-1.5 border border-line px-3 py-2 hover:!text-ink" style={{ borderRadius: 4 }}>Licence records <ArrowUpRight className="size-3" /></Link>
+                <Link to={`/0g?root=${root}`} className="label flex items-center gap-1.5 bg-panel-2 px-3 py-2 hover:!text-ink" style={{ borderRadius: 12 }}>Replay the session <ArrowUpRight className="size-3" /></Link>
+                <Link to="/ens" className="label flex items-center gap-1.5 bg-panel-2 px-3 py-2 hover:!text-ink" style={{ borderRadius: 12 }}>Licence records <ArrowUpRight className="size-3" /></Link>
               </div>
             )}
           </Plate>
@@ -164,8 +164,8 @@ export function Verify() {
             <p className="break-all font-mono text-[11.5px] text-muted">{url.replace(/^https?:\/\//, '')}</p>
             <button
               onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1300); } catch { /* clipboard blocked */ } }}
-              className="label flex items-center gap-2 border border-line px-3 py-2 hover:!text-ink"
-              style={{ borderRadius: 4 }}
+              className="label flex items-center gap-2 bg-panel-2 px-3 py-2 hover:!text-ink"
+              style={{ borderRadius: 12 }}
             >
               {copied ? <Check className="size-3.5 text-ok" /> : <Copy className="size-3.5" />}{copied ? 'Copied' : 'Copy link'}
             </button>

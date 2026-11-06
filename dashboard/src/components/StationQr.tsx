@@ -14,7 +14,7 @@ export function StationQr({ url, size = 188 }: { url: string; size?: number }) {
     };
   }, [url, size]);
   return src ? (
-    <img src={src} width={size} height={size} alt={`QR code for ${url}`} className="block bg-white p-1.5" style={{ borderRadius: 4, imageRendering: 'pixelated' }} />
+    <img src={src} width={size} height={size} alt={`QR code for ${url}`} className="block bg-white p-1.5" style={{ borderRadius: 12, imageRendering: 'pixelated' }} />
   ) : (
     <span className="skeleton block" style={{ width: size, height: size }} />
   );

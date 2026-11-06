@@ -13,12 +13,12 @@ function clock(iso: string): string {
 export function EventRow({ e }: { e: LiveEvent }) {
   const d = describe(e);
   return (
-    <div className="grid grid-cols-[62px_22px_1fr_auto] items-start gap-x-3 border-b border-line px-4 py-2.5 last:border-b-0">
+    <div className="grid grid-cols-[62px_22px_1fr_auto] items-start gap-x-3 px-6 py-2.5">
       <span className="hash tnum pt-0.5 text-muted">{clock(e.at)}</span>
       <span className="grid h-5 place-items-center"><TrackMark track={e.track} /></span>
       <div className="min-w-0">
         <p className="flex items-center gap-2 text-[13px] font-medium">
-          <span className="inline-block size-1.5 shrink-0" style={{ background: TONE[d.tone] }} aria-hidden />
+          <span className="inline-block size-1.5 shrink-0 rounded-full" style={{ background: TONE[d.tone] }} aria-hidden />
           <span className="truncate">{d.title}</span>
         </p>
         {d.detail && <p className="mt-0.5 truncate font-mono text-[11.5px] text-muted" title={d.detail}>{d.detail}</p>}
@@ -33,11 +33,11 @@ export function EventFeed({ events, limit = 14, className }: { events: LiveEvent
   return (
     <div className={cn('overflow-hidden', className)}>
       {shown.length === 0 ? (
-        <p className="px-4 py-10 text-center text-sm text-muted">Waiting for activity. Start a session on the headset and it appears here.</p>
+        <p className="px-6 py-10 text-center text-sm text-muted">Waiting for activity. Start a session on the headset and it appears here.</p>
       ) : (
         <AnimatePresence initial={false}>
           {shown.map((e) => (
-            <motion.div key={e.id} layout="position" initial={{ opacity: 0, x: -14, backgroundColor: 'color-mix(in srgb, var(--accent) 16%, transparent)' }} animate={{ opacity: 1, x: 0, backgroundColor: 'transparent' }} exit={{ opacity: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+            <motion.div key={e.id} layout="position" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
               <EventRow e={e} />
             </motion.div>
           ))}

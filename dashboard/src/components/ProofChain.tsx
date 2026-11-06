@@ -5,7 +5,7 @@ import type { AnchorRow, CertificateRow, EpisodeView, Track } from '../lib/api';
 import { shortHash } from '../lib/utils';
 import { HashChip } from './HashChip';
 import { Plate } from './Plate';
-import { TrackMark, TRACK_COLOR, TRACK_LABEL } from './TrackMark';
+import { TrackMark } from './TrackMark';
 
 interface NodeProps {
   track: Track;
@@ -17,26 +17,11 @@ interface NodeProps {
 
 function Node({ track, kicker, value, caption, index }: NodeProps) {
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + index * 0.09, duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="min-w-0 flex-1">
-      <Plate still className="flex h-full flex-col gap-3 p-4" style={{ borderTop: `2px solid ${TRACK_COLOR[track]}` }}>
-        <div className="flex items-center justify-between">
-          <span className="label" style={{ color: TRACK_COLOR[track] }}>{TRACK_LABEL[track]}</span>
-          <TrackMark track={track} />
-        </div>
-        <p className="label">{kicker}</p>
-        <div className="min-h-[28px] font-mono text-[14px] leading-snug">{value}</div>
-        <div className="mt-auto text-[12.5px] leading-snug text-muted">{caption}</div>
-      </Plate>
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + index * 0.06, duration: 0.4 }} className="flex min-w-0 flex-col gap-2 py-4 lg:px-5 lg:py-1 lg:first:pl-0 lg:last:pr-0">
+      <p className="label flex items-center gap-2"><TrackMark track={track} className="h-[11px] w-auto" />{kicker}</p>
+      <div className="min-h-[24px] font-mono text-[13.5px] leading-snug">{value}</div>
+      <div className="text-[12.5px] leading-snug text-muted">{caption}</div>
     </motion.div>
-  );
-}
-
-function Connector({ ok }: { ok: boolean }) {
-  return (
-    <div className="flex items-center justify-center py-1 lg:px-1 lg:py-0" aria-hidden>
-      <div className="hidden w-8 lg:block">{ok ? <div className="flow-x" /> : <div className="h-0.5 w-full bg-line" />}</div>
-      <div className="h-7 lg:hidden">{ok ? <div className="flow-y h-full" /> : <div className="h-full w-0.5 bg-line" />}</div>
-    </div>
   );
 }
 
@@ -55,19 +40,19 @@ export function ProofChain({ licence, anchor, episode }: Props) {
 
   const skeleton = <span className="skeleton inline-block h-4 w-28" />;
   return (
-    <Plate still className="p-5 md:p-6">
+    <Plate still className="p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Proof chain</p>
-          <h2 className="display mt-1.5 text-[26px] font-semibold">Latest passed test, end to end</h2>
+          <h2 className="text-[17px] font-semibold">Latest passed test</h2>
+          <p className="label mt-1">From the worker's phone to the licence, every link checked</p>
         </div>
-        <span className="label flex items-center gap-2 border px-2.5 py-1.5" style={{ borderRadius: 4, borderColor: matches ? 'var(--ok)' : 'var(--line)', color: matches ? 'var(--ok)' : undefined }}>
+        <span className="flex items-center gap-2 rounded-full bg-panel-2 px-3 py-1.5 text-[12.5px] font-medium" style={{ color: matches ? 'var(--ok)' : 'var(--muted)' }}>
           <BadgeCheck className="size-3.5" />
           {matches ? 'Same root hash in every proof' : 'Checking links'}
         </span>
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-stretch">
+      <div className="grid divide-y divide-line lg:grid-cols-5 lg:divide-x lg:divide-y-0">
         <Node
           index={0}
           track="world"
@@ -75,7 +60,6 @@ export function ProofChain({ licence, anchor, episode }: Props) {
           value={human.length ? <>id {human[2]?.slice(0, 8)}</> : skeleton}
           caption={human.length ? <>{human[1]} identity{acr ? `, ${acr} class` : ''}. Checked on the worker&apos;s phone.</> : 'Waiting for data'}
         />
-        <Connector ok={Boolean(human.length)} />
         <Node
           index={1}
           track="0g"
@@ -83,7 +67,6 @@ export function ProofChain({ licence, anchor, episode }: Props) {
           value={episode ? <>{episode.counts.observe ?? 0} verdicts</> : skeleton}
           caption={episode ? <>{episode.model} judged every step. {episode.counts.speech ?? 0} spoken.</> : 'Reading the stored session'}
         />
-        <Connector ok={Boolean(episode)} />
         <Node
           index={2}
           track="0g"
@@ -91,7 +74,6 @@ export function ProofChain({ licence, anchor, episode }: Props) {
           value={root ? <HashChip value={root} head={8} tail={6} /> : skeleton}
           caption={episode ? <>{episode.events.length} records, hash chain {episode.verified ? 'verified' : 'not verified'}.</> : 'Downloading from 0G Storage'}
         />
-        <Connector ok={Boolean(anchor)} />
         <Node
           index={3}
           track="0g"
@@ -99,7 +81,6 @@ export function ProofChain({ licence, anchor, episode }: Props) {
           value={anchor ? <HashChip value={anchor.txHash} href={anchor.link} head={8} tail={6} /> : skeleton}
           caption={anchor ? <>{anchor.outcome.replace('_', ' ')}{anchor.at ? ` at ${new Date(anchor.at).toLocaleTimeString([], { hour12: false })}` : ''}.</> : 'Looking up the anchor'}
         />
-        <Connector ok={Boolean(licence)} />
         <Node
           index={4}
           track="ens"

@@ -1,27 +1,14 @@
-import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CountUp } from '../components/CountUp';
 import { EpisodeReplay } from '../components/EpisodeReplay';
 import { EventFeed } from '../components/EventFeed';
 import { HashChip } from '../components/HashChip';
+import { Stat } from '../components/Stat';
 import { Plate } from '../components/Plate';
 import { Sparkline } from '../components/Sparkline';
 import { Logo0G } from '../components/logos';
 import { useEventStream } from '../lib/events';
 import { useAnchors, useBacklog, useOverview } from '../lib/queries';
-
-function Stat({ label, value, suffix, caption, i }: { label: string; value: number | undefined; suffix?: string; caption: string; i: number }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.4 }}>
-      <Plate still className="flex h-full flex-col gap-3 p-5" style={{ borderTop: '2px solid var(--g0)' }}>
-        <p className="label">{label}</p>
-        <p className="display text-[44px] font-bold leading-none">{value === undefined ? <span className="skeleton inline-block h-9 w-16" /> : <CountUp value={value} suffix={suffix} />}</p>
-        <p className="text-[12.5px] text-muted">{caption}</p>
-      </Plate>
-    </motion.div>
-  );
-}
 
 const OUTCOME_TONE: Record<string, string> = { test_pass: 'var(--ok)', test_fail: 'var(--bad)', learn_complete: 'var(--accent)', abandoned: 'var(--muted)' };
 
@@ -50,7 +37,7 @@ export function ZeroG() {
 
   return (
     <div className="grid gap-5">
-      <div className="grid grid-cols-2 gap-5 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-1 md:grid-cols-5">
         <Stat i={0} label="AI verdicts" value={j?.verdicts} caption="Since the server started" />
         <Stat i={1} label="Corrections" value={j?.corrections} caption="Mistakes the judge caught" />
         <Stat i={2} label="Safe stops" value={j?.safeStops} caption="Judge unreachable, nothing unlocked" />
@@ -62,8 +49,8 @@ export function ZeroG() {
         <Plate still className="p-5 md:p-6">
           <div className="mb-3 flex items-start justify-between">
             <div>
-              <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />AI examiner</p>
-              <h2 className="display mt-1.5 text-[26px] font-semibold">Verdict time</h2>
+              <p className="text-[15px] font-semibold">AI examiner</p>
+              <h2 className="display mt-1.5 text-[20px] font-semibold">Verdict time</h2>
             </div>
             <span className="label flex items-center gap-2"><Logo0G className="h-3 w-auto text-g0" /> {overview.data?.model ?? '—'}</span>
           </div>
@@ -94,7 +81,7 @@ export function ZeroG() {
       <div className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
         <Plate still>
           <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-            <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />0G Chain anchors</p>
+            <p className="text-[15px] font-semibold">0G Chain anchors</p>
             {anchors.data?.contract && <HashChip value={anchors.data.contract} head={8} tail={6} />}
           </div>
           {rows.length === 0 ? (
@@ -109,7 +96,7 @@ export function ZeroG() {
                     <HashChip value={a.txHash} href={a.link} head={6} tail={4} />
                     <span className="hash text-muted">{a.at ? new Date(a.at).toLocaleString([], { hour12: false }) : `block ${a.block}`}</span>
                   </div>
-                  <button onClick={() => setPicked(a.rootHash)} className={`label border px-2.5 py-1.5 transition-colors hover:!text-ink ${root === a.rootHash ? '!text-accent' : ''}`} style={{ borderRadius: 3, borderColor: root === a.rootHash ? 'var(--accent)' : 'var(--line)' }}>
+                  <button onClick={() => setPicked(a.rootHash)} className={`label border px-2.5 py-1.5 transition-colors hover:!text-ink ${root === a.rootHash ? '!text-accent' : ''}`} style={{ borderRadius: 8, borderColor: root === a.rootHash ? 'var(--accent)' : 'var(--line)' }}>
                     Replay
                   </button>
                 </li>
@@ -120,7 +107,7 @@ export function ZeroG() {
 
         <Plate still>
           <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-            <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Judge and voice</p>
+            <p className="text-[15px] font-semibold">Judge and voice</p>
           </div>
           <EventFeed events={stream.events.filter((e) => e.track === '0g')} limit={9} />
         </Plate>

@@ -53,21 +53,21 @@ export function Log() {
       <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by track">
           {FILTERS.map((f) => (
-            <button key={f} onClick={() => setTrack(f)} className={cn('label flex items-center gap-2 border px-2.5 py-1.5 transition-colors', track === f ? '!text-ink' : 'hover:!text-ink')} style={{ borderRadius: 3, borderColor: track === f ? (f === 'all' ? 'var(--accent)' : TRACK_COLOR[f]) : 'var(--line)' }}>
+            <button key={f} onClick={() => setTrack(f)} className={cn('label flex items-center gap-2 border px-2.5 py-1.5 transition-colors', track === f ? '!text-ink' : 'hover:!text-ink')} style={{ borderRadius: 8, borderColor: track === f ? (f === 'all' ? 'var(--accent)' : TRACK_COLOR[f]) : 'var(--line)' }}>
               {f !== 'all' && <TrackMark track={f} className="h-[11px] w-auto" />}{f === 'all' ? 'All' : TRACK_LABEL[f]}
             </button>
           ))}
         </div>
-        <button onClick={() => setProblems((p) => !p)} className={cn('label border px-2.5 py-1.5', problems ? '!text-warn' : 'hover:!text-ink')} style={{ borderRadius: 3, borderColor: problems ? 'var(--warn)' : 'var(--line)' }}>Problems only</button>
+        <button onClick={() => setProblems((p) => !p)} className={cn('label border px-2.5 py-1.5', problems ? '!text-warn' : 'hover:!text-ink')} style={{ borderRadius: 8, borderColor: problems ? 'var(--warn)' : 'var(--line)' }}>Problems only</button>
         <label className="relative ml-auto min-w-[200px] flex-1 sm:max-w-[320px]">
           <span className="sr-only">Search events</span>
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events, ids, hashes…" className="h-9 w-full border border-line bg-panel-2 pl-8 pr-2 font-mono text-[12px] outline-none focus:border-accent" style={{ borderRadius: 4 }} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events, ids, hashes…" className="h-9 w-full bg-panel-2 pl-8 pr-2 font-mono text-[12px] outline-none focus:border-accent" style={{ borderRadius: 12 }} />
         </label>
-        <button onClick={() => { setFrozen(paused ? null : merged); setPaused((p) => !p); }} className="label flex items-center gap-1.5 border border-line px-2.5 py-2 hover:!text-ink" style={{ borderRadius: 4 }}>
+        <button onClick={() => { setFrozen(paused ? null : merged); setPaused((p) => !p); }} className="label flex items-center gap-1.5 bg-panel-2 px-2.5 py-2 hover:!text-ink" style={{ borderRadius: 12 }}>
           {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}{paused ? 'Resume' : 'Pause'}
         </button>
-        <button onClick={exportJson} className="label flex items-center gap-1.5 border border-line px-2.5 py-2 hover:!text-ink" style={{ borderRadius: 4 }}><Download className="size-3.5" />Export</button>
+        <button onClick={exportJson} className="label flex items-center gap-1.5 bg-panel-2 px-2.5 py-2 hover:!text-ink" style={{ borderRadius: 12 }}><Download className="size-3.5" />Export</button>
       </div>
 
       <div className="label flex items-center justify-between border-b border-line px-4 py-2">

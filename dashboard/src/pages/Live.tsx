@@ -19,7 +19,7 @@ function NoSignal() {
       <div className="absolute inset-0 opacity-[0.07]" style={{ background: 'repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 14px)' }} />
       <div className="relative max-w-sm px-6 text-center">
         <Video className="mx-auto size-9 text-muted" strokeWidth={1.4} />
-        <p className="display mt-4 text-[34px] font-bold">No signal</p>
+        <p className="display mt-4 text-[22px] font-semibold">No signal</p>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">Waiting for the headset. Open the app on the Quest and start a session. The picture appears here within a second or two.</p>
       </div>
     </div>
@@ -61,24 +61,24 @@ export function Live() {
     <div className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
       <div className="grid content-start gap-5">
         <Plate still>
-          <div ref={wrap} className="relative aspect-video w-full overflow-hidden bg-black" style={{ borderRadius: 5 }}>
+          <div ref={wrap} className="relative aspect-video w-full overflow-hidden bg-black" style={{ borderRadius: 14 }}>
             <img key={epoch} src={`/live/stream?e=${epoch}`} alt="Live view from the headset" className={cn('absolute inset-0 size-full object-contain transition-opacity duration-500', active ? 'opacity-100' : 'opacity-0')} style={{ transform: flip ? 'scaleY(-1)' : undefined }} />
             {!active && <NoSignal />}
 
             <div className="absolute left-3 top-3 flex items-center gap-2">
-              <span className="label flex items-center gap-2 border px-2.5 py-1.5 backdrop-blur-sm" style={{ borderRadius: 3, background: 'color-mix(in srgb, var(--bg) 70%, transparent)', borderColor: active ? 'var(--bad)' : 'var(--line)', color: active ? 'var(--bad)' : undefined }}>
+              <span className="label flex items-center gap-2 border px-2.5 py-1.5 " style={{ borderRadius: 8, background: 'color-mix(in srgb, var(--bg) 70%, transparent)', borderColor: active ? 'var(--bad)' : 'var(--line)', color: active ? 'var(--bad)' : undefined }}>
                 <span className="lamp" style={{ ['--lamp' as string]: active ? 'var(--bad)' : 'var(--muted)' }} />{active ? 'Live video' : 'Offline'}
               </span>
-              {active && <span className="label border border-line px-2.5 py-1.5 backdrop-blur-sm" style={{ borderRadius: 3, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }}>{status.data?.fps} fps · {status.data?.ageMs ?? 0} ms</span>}
+              {active && <span className="label bg-panel-2 px-2.5 py-1.5 " style={{ borderRadius: 8, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }}>{status.data?.fps} fps · {status.data?.ageMs ?? 0} ms</span>}
             </div>
             <div className="absolute right-3 top-3 flex gap-2">
-              <button onClick={toggleFlip} className="grid size-9 place-items-center border text-muted backdrop-blur-sm hover:text-ink" style={{ borderRadius: 4, borderColor: flip ? 'var(--accent)' : 'var(--line)', color: flip ? 'var(--accent)' : undefined, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Flip the picture upside down" title="Flip upside down"><FlipVertical2 className="size-4" /></button>
-              <button onClick={fullscreen} className="grid size-9 place-items-center border border-line text-muted backdrop-blur-sm hover:text-ink" style={{ borderRadius: 4, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Full screen"><Maximize2 className="size-4" /></button>
+              <button onClick={toggleFlip} className="grid size-9 place-items-center border text-muted  hover:text-ink" style={{ borderRadius: 12, borderColor: flip ? 'var(--accent)' : 'var(--line)', color: flip ? 'var(--accent)' : undefined, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Flip the picture upside down" title="Flip upside down"><FlipVertical2 className="size-4" /></button>
+              <button onClick={fullscreen} className="grid size-9 place-items-center bg-panel-2 text-muted  hover:text-ink" style={{ borderRadius: 12, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Full screen"><Maximize2 className="size-4" /></button>
             </div>
 
             <AnimatePresence>
               {caption && (
-                <motion.div key={caption.at} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute inset-x-4 bottom-4 border px-4 py-3 backdrop-blur-md" style={{ borderRadius: 4, borderColor: 'var(--warn)', background: 'color-mix(in srgb, var(--bg) 78%, transparent)' }}>
+                <motion.div key={caption.at} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute inset-x-4 bottom-4 border px-4 py-3 backdrop-blur-md" style={{ borderRadius: 12, borderColor: 'var(--warn)', background: 'color-mix(in srgb, var(--bg) 78%, transparent)' }}>
                   <p className="label !text-warn">AI technician{caption.ms ? ` · ${caption.ms} ms` : ''}</p>
                   <p className="mt-1 text-[clamp(14px,1.6vw,20px)] font-medium leading-snug">{caption.line}</p>
                 </motion.div>
@@ -101,7 +101,7 @@ export function Live() {
 
         <Plate still>
           <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-            <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />AI technician, live</p>
+            <p className="text-[15px] font-semibold">AI technician, live</p>
             <span className="label flex items-center gap-2"><span className="lamp" style={{ ['--lamp' as string]: stream.status === 'live' ? 'var(--ok)' : 'var(--warn)' }} />{stream.status === 'live' ? 'Connected' : 'Reconnecting'}</span>
           </div>
           <EventFeed events={stream.events.filter((e) => e.track === '0g' && e.event !== 'session_start')} limit={7} />
@@ -110,7 +110,7 @@ export function Live() {
 
       <div className="grid content-start gap-5">
         <Plate still className="p-5">
-          <p className="label mb-3 flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Machine, as the worker sees it</p>
+          <p className="text-[15px] font-semibold mb-3">Machine, as the worker sees it</p>
           <MachineTwin machine={session.machine} />
         </Plate>
 
@@ -138,7 +138,7 @@ export function Live() {
             <li>Put the headset on and open the sharing menu.</li>
             <li>Choose Cast, then your browser or the Meta Horizon app.</li>
           </ol>
-          <a href="https://www.oculus.com/casting/" target="_blank" rel="noreferrer" className="label mt-4 inline-flex items-center gap-2 border border-line px-3 py-2 hover:!text-ink" style={{ borderRadius: 4 }}>Open Meta casting <ExternalLink className="size-3.5" /></a>
+          <a href="https://www.oculus.com/casting/" target="_blank" rel="noreferrer" className="label mt-4 inline-flex items-center gap-2 bg-panel-2 px-3 py-2 hover:!text-ink" style={{ borderRadius: 12 }}>Open Meta casting <ExternalLink className="size-3.5" /></a>
         </Plate>
       </div>
     </div>

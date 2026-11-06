@@ -44,11 +44,11 @@ export function LicenceDialog({ label, onClose }: { label: string | null; onClos
           <div className="mb-5 flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="label flex items-center gap-2"><LogoENS className="h-3 w-auto text-ens" />ENS licence</p>
-              <Dialog.Title className="display mt-1.5 break-all text-[28px] font-semibold">{label}.smartician.eth</Dialog.Title>
+              <Dialog.Title className="display mt-1.5 break-all text-[22px] font-semibold">{label}.smartician.eth</Dialog.Title>
             </div>
             <div className="flex items-center gap-3">
               {lic && <StatusBadge reason={lic.reason} />}
-              <Dialog.Close className="grid size-8 place-items-center border border-line text-muted hover:text-ink" style={{ borderRadius: 4 }} aria-label="Close"><X className="size-4" /></Dialog.Close>
+              <Dialog.Close className="grid size-8 place-items-center bg-panel-2 text-muted hover:text-ink" style={{ borderRadius: 12 }} aria-label="Close"><X className="size-4" /></Dialog.Close>
             </div>
           </div>
 
@@ -57,7 +57,7 @@ export function LicenceDialog({ label, onClose }: { label: string | null; onClos
 
           {lic && (
             <>
-              <dl className="mb-5 grid gap-px border border-line bg-line sm:grid-cols-3" style={{ borderRadius: 4, overflow: 'hidden' }}>
+              <dl className="mb-5 grid gap-px bg-line sm:grid-cols-3" style={{ borderRadius: 12, overflow: 'hidden' }}>
                 {[
                   ['Name on licence', lic.alias ?? '—'],
                   ['Expires', `${lic.expiresAt ? new Date(lic.expiresAt).toLocaleDateString() : '—'} · ${daysLeft(lic.expiresAt)}`],
@@ -67,11 +67,11 @@ export function LicenceDialog({ label, onClose }: { label: string | null; onClos
                 ))}
               </dl>
 
-              <p className="label mb-2 flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Key-value records on this name</p>
+              <p className="text-[15px] font-semibold mb-2">Key-value records on this name</p>
               {detail.data?.writes.length ? (
                 <div className="grid gap-3">
                   {detail.data.writes.map((w) => (
-                    <div key={w.tx} className="border border-line" style={{ borderRadius: 4 }}>
+                    <div key={w.tx} className="bg-panel-2" style={{ borderRadius: 12 }}>
                       <div className="flex items-center justify-between border-b border-line bg-panel-2 px-3 py-2">
                         <span className="label !text-[10px]">Written in one transaction</span>
                         <HashChip value={w.tx} href={w.link ?? sepoliaTxLink(w.tx)} head={8} tail={6} />
@@ -88,7 +88,7 @@ export function LicenceDialog({ label, onClose }: { label: string | null; onClos
                   ))}
                 </div>
               ) : (
-                <p className="border border-line px-3 py-4 text-sm text-muted" style={{ borderRadius: 4 }}>{lic.valid ? 'No record transactions found in recent blocks.' : 'This licence no longer has records.'}</p>
+                <p className="bg-panel-2 px-3 py-4 text-sm text-muted" style={{ borderRadius: 12 }}>{lic.valid ? 'No record transactions found in recent blocks.' : 'This licence no longer has records.'}</p>
               )}
 
               <ul className="mt-5 grid gap-2 text-[13px]">
@@ -103,15 +103,15 @@ export function LicenceDialog({ label, onClose }: { label: string | null; onClos
               {lic.valid && (
                 <div className="mt-6 border-t border-line pt-5">
                   {!confirming ? (
-                    <button onClick={() => setConfirming(true)} className="label border px-3 py-2 transition-colors hover:!text-ink" style={{ borderRadius: 4, borderColor: 'var(--bad)', color: 'var(--bad)' }}>Revoke licence…</button>
+                    <button onClick={() => setConfirming(true)} className="label border px-3 py-2 transition-colors hover:!text-ink" style={{ borderRadius: 12, borderColor: 'var(--bad)', color: 'var(--bad)' }}>Revoke licence…</button>
                   ) : (
                     <form onSubmit={(e) => { e.preventDefault(); revoke.mutate(); }} className="grid gap-3">
                       <p className="text-[13px] text-muted">Revoking removes this licence on ENS for everyone, and it cannot be undone. Enter the admin token to confirm. It stays in this tab and is not stored.</p>
-                      <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Admin token" autoComplete="off" className="h-10 border border-line bg-panel-2 px-3 font-mono text-[13px] outline-none focus:border-accent" style={{ borderRadius: 4 }} />
+                      <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Admin token" autoComplete="off" className="h-10 bg-panel-2 px-3 font-mono text-[13px] outline-none focus:border-accent" style={{ borderRadius: 12 }} />
                       {revoke.isError && <p className="text-[13px] text-bad">{(revoke.error as Error).message}</p>}
                       <div className="flex gap-2">
-                        <button type="submit" disabled={!token || revoke.isPending} className="h-10 px-4 font-mono text-[12px] font-medium disabled:opacity-50" style={{ borderRadius: 4, background: 'var(--bad)', color: '#fff' }}>{revoke.isPending ? 'Revoking on Sepolia…' : 'Revoke now'}</button>
-                        <button type="button" onClick={() => { setConfirming(false); setToken(''); revoke.reset(); }} className="label h-10 border border-line px-3 hover:!text-ink" style={{ borderRadius: 4 }}>Cancel</button>
+                        <button type="submit" disabled={!token || revoke.isPending} className="h-10 px-4 font-mono text-[12px] font-medium disabled:opacity-50" style={{ borderRadius: 12, background: 'var(--bad)', color: '#fff' }}>{revoke.isPending ? 'Revoking on Sepolia…' : 'Revoke now'}</button>
+                        <button type="button" onClick={() => { setConfirming(false); setToken(''); revoke.reset(); }} className="label h-10 bg-panel-2 px-3 hover:!text-ink" style={{ borderRadius: 12 }}>Cancel</button>
                       </div>
                     </form>
                   )}

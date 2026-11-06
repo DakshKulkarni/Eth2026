@@ -34,7 +34,7 @@ function Detail({ e }: { e: EpisodeEvent }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="label border px-2 py-1" style={{ borderRadius: 3, color: tickColor(e), borderColor: tickColor(e) }}>{e.kind.replace('_', ' ')}</span>
+        <span className="label border px-2 py-1" style={{ borderRadius: 8, color: tickColor(e), borderColor: tickColor(e) }}>{e.kind.replace('_', ' ')}</span>
         <span className="hash text-muted">#{e.index} · {new Date(e.at).toLocaleTimeString([], { hour12: false })} · hash {e.hash}</span>
       </div>
       <dl>
@@ -129,8 +129,8 @@ export function EpisodeReplay({ root }: { root: string | null }) {
     <Plate still className="p-5 md:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Episode replay</p>
-          <h2 className="display mt-1.5 text-[26px] font-semibold">{ep.outcome?.replace('_', ' ')} · {ep.events.length} records</h2>
+          <p className="text-[15px] font-semibold">Episode replay</p>
+          <h2 className="display mt-1.5 text-[20px] font-semibold">{ep.outcome?.replace('_', ' ')} · {ep.events.length} records</h2>
           <p className="mt-1 text-[12.5px] text-muted">{ep.model}{seconds !== null ? ` · ${Math.floor(seconds / 60)}m ${seconds % 60}s` : ''} · downloaded from 0G Storage, hash chain {ep.verified ? 'verified' : 'NOT verified'}</p>
         </div>
         <HashChip value={ep.rootHash} head={10} tail={8} />
@@ -147,19 +147,19 @@ export function EpisodeReplay({ root }: { root: string | null }) {
           </div>
           <input type="range" min={0} max={last} value={Math.min(i, last)} onChange={(e) => { setI(Number(e.target.value)); setPlaying(false); }} className="w-full accent-[var(--accent)]" aria-label="Replay position" />
           <div className="my-3 flex flex-wrap items-center gap-2">
-            <button onClick={() => setI((x) => Math.max(0, x - 1))} className="grid size-9 place-items-center border border-line text-muted hover:text-ink" style={{ borderRadius: 4 }} aria-label="Previous event"><SkipBack className="size-4" /></button>
-            <button onClick={() => { if (i >= last) setI(0); setPlaying((p) => !p); }} className="flex h-9 items-center gap-2 bg-accent px-4 font-mono text-[12px] font-medium text-accent-ink" style={{ borderRadius: 4 }}>
+            <button onClick={() => setI((x) => Math.max(0, x - 1))} className="grid size-9 place-items-center bg-panel-2 text-muted hover:text-ink" style={{ borderRadius: 12 }} aria-label="Previous event"><SkipBack className="size-4" /></button>
+            <button onClick={() => { if (i >= last) setI(0); setPlaying((p) => !p); }} className="flex h-9 items-center gap-2 bg-accent px-4 font-mono text-[12px] font-medium text-accent-ink" style={{ borderRadius: 12 }}>
               {playing ? <Pause className="size-4" /> : <Play className="size-4" />}{playing ? 'Pause' : 'Play'}
             </button>
-            <button onClick={() => setI((x) => Math.min(last, x + 1))} className="grid size-9 place-items-center border border-line text-muted hover:text-ink" style={{ borderRadius: 4 }} aria-label="Next event"><SkipForward className="size-4" /></button>
+            <button onClick={() => setI((x) => Math.min(last, x + 1))} className="grid size-9 place-items-center bg-panel-2 text-muted hover:text-ink" style={{ borderRadius: 12 }} aria-label="Next event"><SkipForward className="size-4" /></button>
             <div className="ml-auto flex items-center gap-1.5">
               {[1, 4, 16].map((x) => (
-                <button key={x} onClick={() => setSpeed(x)} className={cn('h-9 border px-2.5 font-mono text-[11.5px]', speed === x ? 'border-accent text-accent' : 'border-line text-muted hover:text-ink')} style={{ borderRadius: 4 }}>{x}×</button>
+                <button key={x} onClick={() => setSpeed(x)} className={cn('h-9 border px-2.5 font-mono text-[11.5px]', speed === x ? 'border-accent text-accent' : 'border-line text-muted hover:text-ink')} style={{ borderRadius: 12 }}>{x}×</button>
               ))}
               <span className="hash tnum ml-2 text-muted">{Math.min(i, last) + 1} / {events.length}</span>
             </div>
           </div>
-          <div className="border border-line bg-panel-2 p-4" style={{ borderRadius: 4 }}>{cur && <Detail e={cur} />}</div>
+          <div className="bg-panel-2 p-4" style={{ borderRadius: 12 }}>{cur && <Detail e={cur} />}</div>
         </div>
 
         <div className="min-w-0">

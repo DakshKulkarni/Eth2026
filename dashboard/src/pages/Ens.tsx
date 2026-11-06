@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import { CountUp } from '../components/CountUp';
 import { EventFeed } from '../components/EventFeed';
 import { HashChip } from '../components/HashChip';
 import { LicenceDialog } from '../components/LicenceDialog';
+import { Stat } from '../components/Stat';
 import { Plate } from '../components/Plate';
 import { StatusBadge } from '../components/StatusBadge';
 import { LogoWorld } from '../components/logos';
@@ -14,22 +14,10 @@ import { useEventStream } from '../lib/events';
 import { useCertificates } from '../lib/queries';
 import { daysLeft } from '../lib/utils';
 
-function Stat({ label, value, caption, i }: { label: string; value: number | undefined; caption: string; i: number }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.4 }}>
-      <Plate still className="flex h-full flex-col gap-3 p-5" style={{ borderTop: '2px solid var(--ens)' }}>
-        <p className="label">{label}</p>
-        <p className="display text-[44px] font-bold leading-none">{value === undefined ? <span className="skeleton inline-block h-9 w-16" /> : <CountUp value={value} />}</p>
-        <p className="text-[12.5px] text-muted">{caption}</p>
-      </Plate>
-    </motion.div>
-  );
-}
-
 function KV({ k, children }: { k: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[120px_1fr] items-start gap-3 border-t border-line py-2.5 first:border-t-0">
-      <dt className="font-mono text-[12px] text-accent">{k}</dt>
+      <dt className="font-mono text-[12px] text-muted">{k}</dt>
       <dd className="min-w-0 break-all font-mono text-[12.5px]">{children}</dd>
     </div>
   );
@@ -52,7 +40,7 @@ export function Ens() {
 
   return (
     <div className="grid gap-5">
-      <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-1 md:grid-cols-4">
         <Stat i={0} label="Licences" value={list?.length} caption="Issued in recent blocks" />
         <Stat i={1} label="Valid" value={valid} caption="Readable on ENS right now" />
         <Stat i={2} label="Revoked or expired" value={gone} caption="No longer valid" />
@@ -63,10 +51,10 @@ export function Ens() {
         <Plate still className="p-5 md:p-6">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Machine passport</p>
-              <h2 className="display mt-1.5 break-all text-[26px] font-semibold">{p?.name ?? 'cnc-01.smartician.eth'}</h2>
+              <p className="text-[15px] font-semibold">Machine passport</p>
+              <h2 className="display mt-1.5 break-all text-[20px] font-semibold">{p?.name ?? 'cnc-01.smartician.eth'}</h2>
             </div>
-            <span className="label flex items-center gap-2 border px-2 py-1" style={{ borderRadius: 3, color: p?.registered ? 'var(--ok)' : 'var(--warn)', borderColor: p?.registered ? 'var(--ok)' : 'var(--warn)' }}>
+            <span className="label flex items-center gap-2 border px-2 py-1" style={{ borderRadius: 8, color: p?.registered ? 'var(--ok)' : 'var(--warn)', borderColor: p?.registered ? 'var(--ok)' : 'var(--warn)' }}>
               <span className="size-1.5" style={{ background: p?.registered ? 'var(--ok)' : 'var(--warn)' }} />{p ? (p.registered ? 'Registered' : 'Not registered') : 'Reading'}
             </span>
           </div>
@@ -86,7 +74,7 @@ export function Ens() {
         </Plate>
 
         <Plate still className="p-5 md:p-6">
-          <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />ENSv2 contracts · Sepolia</p>
+          <p className="text-[15px] font-semibold">ENSv2 contracts · Sepolia</p>
           <dl className="mt-3">
             {e ? (
               <>
@@ -103,7 +91,7 @@ export function Ens() {
 
       <Plate still>
         <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-          <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />Licences</p>
+          <p className="text-[15px] font-semibold">Licences</p>
           <span className="label">{list ? `${list.length} shown` : 'Reading ENS…'}</span>
         </div>
         {certs.isError && <p className="px-4 py-8 text-center text-sm text-bad">Could not read licences from the chain.</p>}
@@ -130,7 +118,7 @@ export function Ens() {
 
       <Plate still>
         <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-          <p className="label flex items-center gap-2"><span className="hazard inline-block size-2.5" aria-hidden />ENS activity</p>
+          <p className="text-[15px] font-semibold">ENS activity</p>
         </div>
         <EventFeed events={stream.events.filter((x) => x.track === 'ens')} limit={8} />
       </Plate>
