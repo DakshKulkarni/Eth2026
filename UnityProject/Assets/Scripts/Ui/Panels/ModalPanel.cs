@@ -63,13 +63,13 @@ namespace MrTrainer.Ui
             float pad = ui.T.padding;
             float gap = ui.T.gap;
             float inner = Width - 2f * pad;
-            float bodyH = EstimateHeight(s.body, inner);
+            float bodyH = ui.Measure(s.body, ui.T.caption + 4f, false, inner);
             float total = pad + 52f + gap + 76f;
             if (bodyH > 0f) total += gap + bodyH;
             var bulletH = new List<float>();
             foreach (var b in s.bullets)
             {
-                float h = EstimateHeight(b, inner);
+                float h = ui.Measure("- " + b, ui.T.caption, false, inner);
                 bulletH.Add(h);
                 total += gap + h;
             }
@@ -105,14 +105,6 @@ namespace MrTrainer.Ui
             float cy = total * 0.5f - y - h * 0.5f;
             y += h + gap;
             return cy;
-        }
-
-        static float EstimateHeight(string text, float width)
-        {
-            if (string.IsNullOrEmpty(text)) return 0f;
-            int perLine = Mathf.Max(10, (int)(width / 17.5f));
-            int lines = Mathf.CeilToInt(text.Length / (float)perLine);
-            return lines * 46f + 8f;
         }
 
         void BuildTrust(RectTransform parent, TrustInfo t, float width, float cy)

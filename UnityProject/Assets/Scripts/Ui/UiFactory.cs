@@ -75,6 +75,21 @@ namespace MrTrainer.Ui
             return t;
         }
 
+        // The real wrapped height of a text at a given width, so panels can be sized to fit it.
+        public float Measure(string text, float size, bool bold, float width)
+        {
+            if (string.IsNullOrEmpty(text)) return 0f;
+            var go = new GameObject("_measure", typeof(RectTransform));
+            var t = go.AddComponent<TextMeshProUGUI>();
+            var font = bold && T.semibold != null ? T.semibold : T.regular;
+            if (font != null) t.font = font;
+            t.fontSize = size;
+            t.textWrappingMode = TextWrappingModes.Normal;
+            float h = t.GetPreferredValues(text, width, 0f).y;
+            UnityEngine.Object.DestroyImmediate(go);
+            return Mathf.Ceil(h) + 8f;
+        }
+
         public TextMeshProUGUI Title(Transform parent, string text, Vector2 box, Vector2 pos)
         {
             return Text(parent, text, T.title, T.textPrimary, true, TextAlignmentOptions.Left, box, pos);

@@ -60,12 +60,12 @@ namespace MrTrainer.Ui
             SetStatus(v.valid, v.valid ? "VALID" : "NOT VALID");
 
             string who = string.IsNullOrEmpty(v.alias) ? "Certified operator" : v.alias;
-            ui.Text(content, who, ui.T.hero, ui.T.textPrimary, true, TextAlignmentOptions.Center,
-                new Vector2(inner, 96f), new Vector2(0f, 375f));
+            Fit(ui.Text(content, who, ui.T.hero, ui.T.textPrimary, true, TextAlignmentOptions.Center,
+                new Vector2(inner, 96f), new Vector2(0f, 375f)), 40f);
             ui.Text(content, "Certified operator of the cnc-01 vertical machining center", ui.T.caption,
                 ui.T.textSecondary, false, TextAlignmentOptions.Center, new Vector2(inner, 44f), new Vector2(0f, 302f));
-            ui.Text(content, v.name, ui.T.title - 8f, ui.T.accent, true, TextAlignmentOptions.Center,
-                new Vector2(inner, 64f), new Vector2(0f, 235f));
+            Fit(ui.Text(content, v.name, ui.T.title - 8f, ui.T.accent, true, TextAlignmentOptions.Center,
+                new Vector2(inner, 64f), new Vector2(0f, 235f)), 28f);
             ui.Text(content, v.dates, ui.T.caption, ui.T.textPrimary, false, TextAlignmentOptions.Center,
                 new Vector2(inner, 44f), new Vector2(0f, 178f));
 
@@ -90,8 +90,8 @@ namespace MrTrainer.Ui
                 float y = cardH * 0.5f - 12f - RowH * 0.5f - i * RowH;
                 ui.Text(card, rows[i, 0], ui.T.caption, ui.T.accent, true, TextAlignmentOptions.Left,
                     new Vector2(300f, 48f), new Vector2(left + 24f + 150f, y));
-                ui.Text(card, rows[i, 1], ui.T.caption, ui.T.textPrimary, false, TextAlignmentOptions.Left,
-                    new Vector2(inner - 380f, 48f), new Vector2(left + 24f + 316f + (inner - 380f) * 0.5f, y));
+                Fit(ui.Text(card, rows[i, 1], ui.T.caption, ui.T.textPrimary, false, TextAlignmentOptions.Left,
+                    new Vector2(inner - 380f, 48f), new Vector2(left + 24f + 316f + (inner - 380f) * 0.5f, y)), 20f);
                 if (i < Rows - 1)
                     ui.Fill(ui.Rect(card, "Sep", new Vector2(inner - 48f, 2f), new Vector2(0f, y - RowH * 0.5f)), ui.T.border);
             }
@@ -130,6 +130,15 @@ namespace MrTrainer.Ui
         {
             status.Set(text, valid ? ui.T.success : ui.T.danger);
             status.Root.anchoredPosition = new Vector2(Width * 0.5f - ui.T.padding - status.Root.sizeDelta.x * 0.5f, 470f);
+        }
+
+        // One line that shrinks to fit its box instead of being cut off.
+        static void Fit(TextMeshProUGUI t, float min)
+        {
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = min;
+            t.fontSizeMax = t.fontSize;
         }
 
         static string Or(string value)
