@@ -24,6 +24,8 @@ export async function registerWeb(app: FastifyInstance): Promise<void> {
   });
   app.setNotFoundHandler((req, reply) => {
     const path = req.url.split('?')[0] ?? '/';
+    // The page declares its own icon; browsers still ask for this one, which is not an error worth logging.
+    if (path === '/favicon.ico') return reply.code(204).send();
     const isPage = (req.method === 'GET' || req.method === 'HEAD') && !path.startsWith('/api/') && !/\.[a-z0-9]+$/i.test(path);
     if (isPage) return reply.header('cache-control', 'no-cache').sendFile('index.html');
     return reply.code(404).send({ error: 'not_found' });
