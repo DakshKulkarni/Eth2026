@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41e6e74dbdb734c11a7f00f999e4220e, type: 3}
   m_Name: UiTheme
   m_EditorClassIdentifier: Assembly-CSharp::MrTrainer.Ui.UiTheme
-  panel: {r: 0.05882353, g: 0.08627451, b: 0.1254902, a: 0.88}
-  border: {r: 0.16470589, g: 0.21176471, b: 0.27058825, a: 1}
-  textPrimary: {r: 0.9490196, g: 0.9647059, b: 0.98039216, a: 1}
-  textSecondary: {r: 0.62352943, g: 0.6901961, b: 0.7647059, a: 1}
-  accent: {r: 0.29803923, g: 0.5529412, b: 1, a: 1}
-  success: {r: 0.09803922, g: 0.7647059, b: 0.6509804, a: 1}
-  warning: {r: 0.9607843, g: 0.6509804, b: 0.13725491, a: 1}
-  danger: {r: 1, g: 0.3019608, b: 0.30980393, a: 1}
+  panel: {r: 0.0588, g: 0.0667, b: 0.0824, a: 0.94}
+  border: {r: 0.149, g: 0.169, b: 0.2, a: 1}
+  textPrimary: {r: 0.9608, g: 0.9686, b: 0.9804, a: 1}
+  textSecondary: {r: 0.596, g: 0.635, b: 0.702, a: 1}
+  accent: {r: 0.8314, g: 1, b: 0.3098, a: 1}
+  success: {r: 0.2392, g: 0.8627, b: 0.5922, a: 1}
+  warning: {r: 1, g: 0.7098, b: 0.2784, a: 1}
+  danger: {r: 1, g: 0.4196, b: 0.4196, a: 1}
   regular: {fileID: 11400000, guid: dda8d4d183f898241969906ee2a03d81, type: 2}
   semibold: {fileID: 11400000, guid: a8ff26fc8eee4e64f84d729a22088af5, type: 2}
   body: 40
@@ -28,4 +28,4 @@ MonoBehaviour:
   hero: 72
   padding: 32
   gap: 16
-  borderWidth: 3
+  borderWidth: 2

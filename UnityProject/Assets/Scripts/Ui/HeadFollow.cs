@@ -5,7 +5,6 @@ namespace MrTrainer.Ui
     public class HeadFollow : MonoBehaviour
     {
         public Transform head;
-        public Transform hand;
         public float distance = 1.0f;
         public float drop = 0.28f;
         public float deadZone = 24f;
@@ -17,6 +16,21 @@ namespace MrTrainer.Ui
         bool pinned;
         Vector3 velocity;
 
+        public bool Pinned { get { return pinned; } }
+
+        // Leaves the panel where the user put it until Unpin is called.
+        public void PinAt(Vector3 position)
+        {
+            pinned = true;
+            transform.position = position;
+        }
+
+        public void Unpin()
+        {
+            pinned = false;
+            initialized = false;
+        }
+
         public void Snap()
         {
             initialized = false;
@@ -25,21 +39,6 @@ namespace MrTrainer.Ui
         void LateUpdate()
         {
             if (head == null) return;
-            if (hand != null)
-            {
-                if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.LTouch))
-                {
-                    pinned = true;
-                    transform.position = hand.position + hand.forward * 0.15f + Vector3.up * 0.05f;
-                    Face();
-                    return;
-                }
-                if (OVRInput.GetDown(OVRInput.Button.Three, OVRInput.Controller.LTouch))
-                {
-                    pinned = false;
-                    initialized = false;
-                }
-            }
             if (pinned)
             {
                 Face();

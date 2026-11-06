@@ -108,7 +108,13 @@ namespace MrTrainer.Ui
             var bg = Fill(rt, color);
             var col = rt.gameObject.AddComponent<BoxCollider>();
             col.size = new Vector3(size.x, size.y, 30f);
-            var txt = Text(rt, label, T.caption + 4f, T.textPrimary, true, TextAlignmentOptions.Center, size, Vector2.zero);
+            var txt = Text(rt, label, T.caption + 4f, T.textPrimary, true, TextAlignmentOptions.Center,
+                new Vector2(size.x - 20f, size.y), Vector2.zero);
+            // Labels shrink to fit the button instead of being cut off with an ellipsis.
+            txt.textWrappingMode = TextWrappingModes.NoWrap;
+            txt.enableAutoSizing = true;
+            txt.fontSizeMin = 20f;
+            txt.fontSizeMax = T.caption + 4f;
             var button = rt.gameObject.AddComponent<UiButton>();
             button.Setup(bg, txt, color, onClick);
             return button;

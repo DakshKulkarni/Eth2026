@@ -17,5 +17,11 @@ namespace MrTrainer.Interaction
         protected virtual void OnUnhover() { }
 
         public abstract bool Activate();
+
+        // Handles that are held and dragged with the ray override these instead of Activate.
+        public virtual bool Draggable { get { return false; } }
+        public virtual void DragBegin(Ray ray, float distance) { }
+        public virtual void DragUpdate(Ray ray) { }
+        public virtual void DragEnd() { }
     }
 }

@@ -14,6 +14,7 @@ namespace MrTrainer.Interaction
         public float maxDistance = 4f;
 
         Interactable hovered;
+        Interactable dragging;
         Coroutine stopRoutine;
 
         void Update()
@@ -27,6 +28,20 @@ namespace MrTrainer.Interaction
             }
 
             var ray = new Ray(origin.position, origin.forward);
+            if (dragging != null)
+            {
+                if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+                {
+                    dragging.DragUpdate(ray);
+                    line.enabled = true;
+                    line.SetPosition(0, ray.origin);
+                    line.SetPosition(1, ray.origin + ray.direction * 1.2f);
+                    line.sharedMaterial = hitMaterial;
+                    return;
+                }
+                dragging.DragEnd();
+                dragging = null;
+            }
             Interactable hit = null;
             float distance = maxDistance;
             RaycastHit info;
@@ -55,6 +70,14 @@ namespace MrTrainer.Interaction
             cursor.gameObject.SetActive(hovered != null);
             cursor.position = end;
 
+            if (hovered != null && hovered.Draggable && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+            {
+                dragging = hovered;
+                dragging.DragBegin(ray, distance);
+                ProceduralSfx.Play(ProceduralSfx.Click, end);
+                Pulse(0.3f, 0.04f);
+                return;
+            }
             if (hovered != null && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
             {
                 bool accepted = hovered.Activate();

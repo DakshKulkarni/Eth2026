@@ -22,6 +22,14 @@ namespace MrTrainer.Ui
             label = text;
             baseColor = color;
             onClick = click;
+            label.color = Readable(color);
+        }
+
+        // Dark text on light fills, light text on dark fills.
+        static Color Readable(Color fill)
+        {
+            float lum = 0.2126f * fill.r + 0.7152f * fill.g + 0.0722f * fill.b;
+            return lum > 0.5f ? new Color(0.05f, 0.06f, 0.08f, 1f) : Color.white;
         }
 
         public void SetLabel(string text)
@@ -32,6 +40,7 @@ namespace MrTrainer.Ui
         public void SetColor(Color color)
         {
             baseColor = color;
+            label.color = Readable(color);
         }
 
         public void SetActive(bool on)
