@@ -47,7 +47,27 @@ export async function nameState(label: string): Promise<NameState> {
   };
 }
 
+const passportCache = new Map<string, { at: number; value: Record<string, unknown> }>();
+const PASSPORT_FRESH_MS = 5 * 60 * 1000;
+
 export async function getPassport(label: string): Promise<Record<string, unknown>> {
+  const cached = passportCache.get(label);
+  if (cached && Date.now() - cached.at < PASSPORT_FRESH_MS) return cached.value;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const value = await readPassport(label);
+      passportCache.set(label, { at: Date.now(), value });
+      return value;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  if (cached) return cached.value;
+  throw lastError;
+}
+
+async function readPassport(label: string): Promise<Record<string, unknown>> {
   const [state, records] = await Promise.all([
     nameState(label),
     readTexts(label, ['description', 'mrt.model', 'mrt.procedure', 'mrt.guide', 'mrt.guideVersion']),

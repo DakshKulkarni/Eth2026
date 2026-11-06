@@ -12,7 +12,7 @@ const schema = z.object({
   ZG_ROUTER_URL: z.string().url().default('https://router-api.0g.ai/v1'),
   ZG_API_KEY: z.string().optional(),
   ZG_COACH_MODEL: z.string().default('qwen3.8-flash'),
-  ZG_TIMEOUT_MS: z.coerce.number().int().default(12000),
+  ZG_TIMEOUT_MS: z.coerce.number().int().default(27000),
   ZG_RPC_URL: z.string().url().default('https://evmrpc-testnet.0g.ai'),
   ZG_INDEXER_URL: z.string().url().default('https://indexer-storage-testnet-turbo.0g.ai'),
   AGENT_PRIVATE_KEY: z.string().optional().transform(cleanKey),

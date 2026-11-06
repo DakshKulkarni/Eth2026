@@ -1,3 +1,4 @@
+import { zgFetch } from './http.js';
 import { z } from 'zod';
 import { config } from '../config.js';
 
@@ -71,12 +72,12 @@ export async function chat(options: ChatOptions): Promise<ZgResult> {
   };
 
   try {
-    const res = await fetch(`${config.ZG_ROUTER_URL}/chat/completions`, {
+    const res = await zgFetch(`${config.ZG_ROUTER_URL}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.ZG_API_KEY}` },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(options.timeoutMs ?? config.ZG_TIMEOUT_MS),
-    });
+    }, 4500);
     if (!res.ok) {
       const text = (await res.text().catch(() => '')).slice(0, 300);
       return { ok: false, reason: 'http', detail: `HTTP ${res.status} ${text}`.trim(), latencyMs: elapsed() };

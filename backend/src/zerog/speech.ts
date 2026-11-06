@@ -1,3 +1,4 @@
+import { zgFetch } from './http.js';
 import { config } from '../config.js';
 
 export type SpeechResult =
@@ -10,12 +11,12 @@ export async function speak(text: string, model: string = config.ZG_TTS_MODEL): 
   if (!config.ZG_API_KEY) return { ok: false, reason: 'no_key', detail: 'ZG_API_KEY is not set', latencyMs: 0 };
 
   try {
-    const res = await fetch(`${config.ZG_ROUTER_URL}/audio/speech`, {
+    const res = await zgFetch(`${config.ZG_ROUTER_URL}/audio/speech`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.ZG_API_KEY}` },
       body: JSON.stringify({ model, input: text, voice: config.ZG_TTS_VOICE, response_format: 'wav' }),
       signal: AbortSignal.timeout(config.ZG_TIMEOUT_MS),
-    });
+    }, 9000);
     if (!res.ok) {
       const body = (await res.text().catch(() => '')).slice(0, 300);
       return { ok: false, reason: 'http', detail: `HTTP ${res.status} ${body}`.trim(), latencyMs: elapsed() };

@@ -35,6 +35,10 @@ function safeStop(latencyMs: number, failure: string): CoachResult {
   };
 }
 
+function transient(r: { ok: boolean; reason?: string; detail?: string }): boolean {
+  return !r.ok && (r.reason === 'timeout' || (r.reason === 'http' && /fetch failed|ECONN|ETIMEDOUT|ENOTFOUND|socket/i.test(r.detail ?? '')));
+}
+
 export async function coach(session: Session, procedure: Procedure, req: Observe): Promise<CoachResult> {
   const fresh = req.actions.filter((a) => a.seq > session.lastSeq).sort((x, y) => x.seq - y.seq);
 
@@ -48,6 +52,10 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
   let totalMs = 0;
   let result = await chat({ messages });
   totalMs += result.latencyMs;
+  if (!result.ok && transient(result)) {
+    result = await chat({ messages });
+    totalMs += result.latencyMs;
+  }
   if (!result.ok) return safeStop(totalMs, `${result.reason}: ${result.detail}`);
   let parsed = parseOutput(result.content);
 
@@ -60,6 +68,10 @@ export async function coach(session: Session, procedure: Procedure, req: Observe
     });
     result = await chat({ messages });
     totalMs += result.latencyMs;
+    if (!result.ok && transient(result)) {
+      result = await chat({ messages });
+      totalMs += result.latencyMs;
+    }
     if (!result.ok) return safeStop(totalMs, `${result.reason}: ${result.detail}`);
     parsed = parseOutput(result.content);
     if (!parsed) return safeStop(totalMs, 'invalid reply after retry');

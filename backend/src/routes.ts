@@ -40,6 +40,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const body = ttsSchema.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
     const result = await speak(body.data.text);
+    activity('tts', { ok: result.ok, ms: result.ok ? result.latencyMs : null, reason: result.ok ? null : result.reason });
     if (!result.ok) return reply.code(502).send({ error: 'tts_unavailable', reason: result.reason });
     const session = body.data.sessionId ? getSession(body.data.sessionId) : undefined;
     session?.log.append('speech', {
@@ -104,7 +105,15 @@ export function registerRoutes(app: FastifyInstance): void {
 
   app.get<{ Params: { label: string } }>('/machine/:label', async (req, reply) => {
     if (!LABEL_PATTERN.test(req.params.label)) return reply.code(400).send({ error: 'invalid_label' });
-    return getPassport(req.params.label);
+    const started = Date.now();
+    try {
+      const passport = await getPassport(req.params.label);
+      activity('passport', { label: req.params.label, ok: true, ms: Date.now() - started });
+      return passport;
+    } catch (err) {
+      activity('passport', { label: req.params.label, ok: false, ms: Date.now() - started, reason: err instanceof Error ? err.message.slice(0, 200) : 'unknown' });
+      return reply.code(502).send({ error: 'passport_unavailable' });
+    }
   });
 
   app.get<{ Params: { label: string } }>('/credential/:label', async (req, reply) => {

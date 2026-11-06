@@ -41,7 +41,7 @@ namespace MrTrainer.Core
 
         public IEnumerator Passport(string label, Action<ApiResult<PassportResponse>> done)
         {
-            return Get("/machine/" + label, done, 8);
+            return Get("/machine/" + label, done, 20);
         }
 
         public IEnumerator Credential(string label, Action<ApiResult<CredentialResponse>> done)
