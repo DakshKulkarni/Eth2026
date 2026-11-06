@@ -12,5 +12,6 @@
     "guide-cnc"
   ],
   "recordsSet": true,
-  "profileRoles": true
+  "profileRoles": true,
+  "humanRoles": true
 }
