@@ -1,0 +1,10 @@
+UnityProject
+contracts
+docs
+.git
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+backend/logs
+backend/dist
