@@ -1,13 +1,13 @@
 import { Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
-import { Hero } from './pages/Hero';
+import { Overview } from './pages/Overview';
 import { Soon } from './pages/Soon';
 
 export function App() {
   return (
     <Routes>
       <Route element={<Shell />}>
-        <Route index element={<Hero />} />
+        <Route index element={<Overview />} />
         <Route path="0g" element={<Soon title="0G" line="The AI judge, Storage and Chain proofs arrive in the next batch." />} />
         <Route path="ens" element={<Soon title="ENS" line="Licences and their key-value records arrive in the next batch." />} />
         <Route path="world" element={<Soon title="World" line="Check-ins and the human proof arrive in the next batch." />} />

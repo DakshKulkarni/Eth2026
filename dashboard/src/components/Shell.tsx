@@ -3,6 +3,7 @@ import { Command, LayoutGrid, Radio, ScrollText, ShieldCheck } from 'lucide-reac
 import { AnimatePresence, motion } from 'motion/react';
 import type { ComponentType, SVGProps } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useEventStream } from '../lib/events';
 import { THEMES, setTheme, useTheme } from '../lib/theme';
 import { cn } from '../lib/utils';
 import { Background } from './Background';
@@ -53,6 +54,7 @@ function ThemeSwitch({ vertical }: { vertical?: boolean }) {
 
 export function Shell() {
   const location = useLocation();
+  const stream = useEventStream();
   const section = NAV.find((n) => (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)));
 
   return (
@@ -97,7 +99,7 @@ export function Shell() {
             </div>
             <div className="flex items-center gap-3">
               <div className="label hidden items-center gap-2 border border-line bg-panel px-2.5 py-1.5 sm:flex" style={{ borderRadius: 4 }}>
-                <span className="lamp" /> Live
+                <span className="lamp" style={{ ['--lamp' as string]: stream.status === 'live' ? 'var(--ok)' : 'var(--warn)' }} /> {stream.status === 'live' ? 'Live' : stream.status === 'connecting' ? 'Connecting' : 'Offline'}
               </div>
               <button className="label flex items-center gap-2 border border-line bg-panel px-2.5 py-1.5 transition-colors hover:!text-ink" style={{ borderRadius: 4 }} aria-label="Open command palette">
                 <Command className="size-3.5" /> <span className="hidden sm:inline">Search</span> <kbd className="font-mono">⌘K</kbd>
