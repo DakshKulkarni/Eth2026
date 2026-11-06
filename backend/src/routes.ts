@@ -108,6 +108,10 @@ export function registerRoutes(app: FastifyInstance): void {
         line: result.coachingLine,
         failure: result.failure ?? null,
         ms: result.latencyMs,
+        requestId: result.requestId || null,
+        model: result.model || null,
+        machine: body.data.machine,
+        speak: result.speak,
       });
       return result;
     } finally {
@@ -249,7 +253,17 @@ export function registerRoutes(app: FastifyInstance): void {
       if (checkin) checkin.issuing = false;
       throw err;
     }
-    activity('certificate', { session: session.id.slice(0, 8), ok: issued.ok, name: issued.ok ? issued.name : null, reason: issued.ok ? null : issued.reason });
+    activity('certificate', {
+      session: session.id.slice(0, 8),
+      ok: issued.ok,
+      name: issued.ok ? issued.name : null,
+      reason: issued.ok ? null : issued.reason,
+      expiresAt: issued.ok ? issued.expiresAt : null,
+      issueTx: issued.ok ? issued.issueTx : null,
+      recordsTx: issued.ok ? issued.recordsTx : null,
+      rootHash: session.finalized.rootHash,
+      human: session.human ? session.human.humanHash.slice(0, 8) : null,
+    });
     if (checkin) {
       checkin.issuing = false;
       if (issued.ok) checkin.certified = true;
@@ -314,6 +328,11 @@ export function registerRoutes(app: FastifyInstance): void {
       rootHash: upload.rootHash,
       anchored: anchor.ok,
       anchorError: anchor.ok ? null : anchor.reason,
+      records: records.length,
+      storageTx: upload.txHash,
+      storageTxSeq: upload.txSeq,
+      anchorTx: anchor.ok ? anchor.txHash : null,
+      links: session.finalized.links,
     });
     return session.finalized;
   });
