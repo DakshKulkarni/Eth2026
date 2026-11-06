@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 const backend = (globalThis as { process?: { env?: Record<string, string> } }).process?.env?.VITE_BACKEND ?? 'http://127.0.0.1:8799';
-const proxied = ['/api', '/live', '/credential', '/machine', '/health', '/worker', '/session', '/tts'];
+const proxied = ['/api', '^/live/', '/credential', '/machine', '/health', '/worker', '/session', '/tts'];
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

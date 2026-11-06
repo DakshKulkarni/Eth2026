@@ -26,6 +26,7 @@ const schema = z.object({
   WORLD_ISSUER: z.string().url().default('https://sandbox.auth.world.org'),
   WORLD_CLIENT_ID: z.string().optional(),
   WORLD_CLIENT_SECRET: z.string().optional(),
+  LIVE_KEY: z.string().optional(),
 });
 
 const present = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined && v !== ''));

@@ -130,6 +130,16 @@ export interface Credential {
   human: string | null;
 }
 
+export interface LiveStatus {
+  active: boolean;
+  lastFrameAt: string | null;
+  ageMs: number | null;
+  fps: number;
+  frameBytes: number;
+  frames: number;
+  viewers: number;
+}
+
 export interface WorkerReady {
   required: boolean;
   ready: boolean;
@@ -156,6 +166,7 @@ export const api = {
   certificates: () => get<{ certificates: CertificateRow[] }>('/api/certificates'),
   chain: () => get<ChainSummary>('/api/chain'),
   procedure: () => get<Procedure>('/api/procedure'),
+  live: () => get<LiveStatus>('/api/live'),
   workerReady: async (): Promise<WorkerReady> => {
     const r = (await (await fetch('/worker/ready')).json()) as WorkerReady & { checkinId?: string };
     delete r.checkinId; // never held in the dashboard
