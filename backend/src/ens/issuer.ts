@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { config, keyProblem } from '../config.js';
-import { ABI, ISSUER_TEXT_KEYS, PARENT_NAME } from './constants.js';
+import { ABI, ISSUER_TEXT_KEYS, PARENT_NAME, PROFILE_TEXT_KEYS } from './constants.js';
 import { loadDeployment } from './deployment.js';
 
 export type TxResult<T> = ({ ok: true } & T) | { ok: false; reason: string };
@@ -23,6 +23,7 @@ export interface IssueInput {
   validityDays: number;
   evidenceRoot: string;
   outcome: string;
+  displayName?: string;
 }
 
 export interface IssueResult {
@@ -30,6 +31,7 @@ export interface IssueResult {
   expiresAt: string;
   issueTx: string;
   recordsTx: string;
+  profileTx: string | null;
 }
 
 export async function issueCertificate(input: IssueInput): Promise<TxResult<IssueResult>> {
@@ -55,15 +57,37 @@ export async function issueCertificate(input: IssueInput): Promise<TxResult<Issu
     const writtenReceipt = await written.wait();
     if (!writtenReceipt || writtenReceipt.status !== 1) return { ok: false, reason: 'records transaction reverted' };
 
+    const profileTx = deployment.profileRoles ? await writeProfile(resolver, name, input) : null;
+
     return {
       ok: true,
       name: `${input.label}.${PARENT_NAME}`,
       expiresAt: new Date(Number(expiry) * 1000).toISOString(),
       issueTx: issuedReceipt.hash,
       recordsTx: writtenReceipt.hash,
+      profileTx,
     };
   } catch (err) {
     return { ok: false, reason: message(err) };
+  }
+}
+
+// The profile records are best effort: a failure here must never undo a certificate that is already issued.
+async function writeProfile(resolver: ethers.Contract, name: string, input: IssueInput): Promise<string | null> {
+  try {
+    const values: Record<(typeof PROFILE_TEXT_KEYS)[number], string> = {
+      alias: input.displayName ?? '',
+      description: 'Certified operator of the cnc-01 vertical machining center. Passed the unaided Test run, judged by the 0G AI technician.',
+      class: 'Certificate',
+    };
+    const calls = PROFILE_TEXT_KEYS.filter((key) => values[key].length > 0).map((key) =>
+      resolverIface.encodeFunctionData('setText', [name, key, values[key]]),
+    );
+    const tx = (await resolver.getFunction('multicall')(calls)) as ethers.ContractTransactionResponse;
+    const receipt = await tx.wait();
+    return receipt && receipt.status === 1 ? receipt.hash : null;
+  } catch {
+    return null;
   }
 }
 

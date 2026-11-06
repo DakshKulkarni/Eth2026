@@ -7,6 +7,7 @@ import { buildBundle, OUTCOMES } from './episode/bundle.js';
 import { sha256 } from './episode/chain.js';
 import { loadDeployment } from './ens/deployment.js';
 import { issueCertificate, revokeCertificate } from './ens/issuer.js';
+import { CERT_LABEL, chooseCertLabel, slugify } from './ens/naming.js';
 import { checkCredential, getPassport, LABEL_PATTERN } from './ens/read.js';
 import { explorer } from './explorer.js';
 import { uploadBundle } from './episode/storage.js';
@@ -22,7 +23,13 @@ const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 const certificateSchema = z.object({
   holder: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
   validityDays: z.number().int().min(1).max(365).default(90),
+  name: z.string().max(40).optional(),
 });
+
+function displayName(name: string | undefined): string {
+  const slug = slugify(name ?? '');
+  return slug.length < 2 ? '' : slug.charAt(0).toUpperCase() + slug.slice(1);
+}
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/health', async () => ({
@@ -117,7 +124,7 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   app.get<{ Params: { label: string } }>('/credential/:label', async (req, reply) => {
-    if (!LABEL_PATTERN.test(req.params.label) || !req.params.label.startsWith('cert-')) {
+    if (!LABEL_PATTERN.test(req.params.label) || !CERT_LABEL.test(req.params.label)) {
       return reply.code(400).send({ error: 'not_a_certificate_label' });
     }
     return checkCredential(req.params.label);
@@ -144,11 +151,12 @@ export function registerRoutes(app: FastifyInstance): void {
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
 
     const issued = await issueCertificate({
-      label: `cert-${session.id.slice(0, 8)}`,
+      label: await chooseCertLabel(body.data.name, session.id),
       holder: body.data.holder ?? loadDeployment().issuer,
       validityDays: body.data.validityDays,
       evidenceRoot: session.finalized.rootHash,
       outcome: session.finalized.outcome,
+      displayName: displayName(body.data.name),
     });
     activity('certificate', { session: session.id.slice(0, 8), ok: issued.ok, name: issued.ok ? issued.name : null, reason: issued.ok ? null : issued.reason });
     if (!issued.ok) return reply.code(502).send({ error: 'issue_failed', reason: issued.reason });

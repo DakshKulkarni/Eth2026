@@ -20,6 +20,7 @@
     "smoke:ens-scope": "tsx --env-file-if-exists=.env scripts/smoke-ens-scope.ts",
     "smoke:ens": "tsx --env-file-if-exists=.env scripts/smoke-ens.ts",
     "ens:setup": "tsx --env-file-if-exists=.env scripts/ens-setup.ts",
+    "ens:grant-profile": "tsx --env-file-if-exists=.env scripts/ens-grant-profile.ts",
     "ens:status": "tsx --env-file-if-exists=.env scripts/ens-status.ts",
     "wallet:new": "tsx scripts/new-wallet.ts",
     "compile:registry": "tsx scripts/compile-registry.ts",

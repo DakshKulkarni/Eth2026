@@ -7,6 +7,7 @@ const schema = z.object({
   userRegistry: z.string(),
   registrar: z.string(),
   procedureRoot: z.string(),
+  profileRoles: z.boolean().optional(),
 });
 
 export type Deployment = z.infer<typeof schema>;

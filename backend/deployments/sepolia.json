@@ -11,5 +11,6 @@
     "cnc-01",
     "guide-cnc"
   ],
-  "recordsSet": true
+  "recordsSet": true,
+  "profileRoles": true
 }

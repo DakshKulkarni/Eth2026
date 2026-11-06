@@ -16,6 +16,8 @@ export const ROLE_UNREGISTER = 1n << 12n;
 export const ROLE_SET_TEXT = 1n << 4n;
 
 export const ISSUER_TEXT_KEYS = ['mrt.evidence', 'mrt.verdict', 'mrt.issuedAt'] as const;
+// Profile records on the certificate: ENSIP-18 alias and description, ENSIP-27 class.
+export const PROFILE_TEXT_KEYS = ['alias', 'description', 'class'] as const;
 export const APPROVER_TEXT_KEYS = ['mrt.approval'] as const;
 
 export const ABI = {
