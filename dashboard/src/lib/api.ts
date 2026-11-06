@@ -115,6 +115,14 @@ export interface RevokeResult {
   link: string;
 }
 
+export interface WorkerReady {
+  required: boolean;
+  ready: boolean;
+  alias?: string | null;
+  humanTag?: string | null;
+  secondsLeft?: number;
+}
+
 export interface ChainSummary {
   zeroG: { chainId: number; registry: string | null; explorer: string; storageExplorer: string; model: string; router: string };
   ens: { network: string; parent: string; resolver: string; userRegistry: string; registrar: string; issuer: string; explorer: string };
@@ -133,6 +141,11 @@ export const api = {
   certificates: () => get<{ certificates: CertificateRow[] }>('/api/certificates'),
   chain: () => get<ChainSummary>('/api/chain'),
   procedure: () => get<Procedure>('/api/procedure'),
+  workerReady: async (): Promise<WorkerReady> => {
+    const r = (await (await fetch('/worker/ready')).json()) as WorkerReady & { checkinId?: string };
+    delete r.checkinId; // never held in the dashboard
+    return r;
+  },
   passport: (label: string) => get<Passport>(`/machine/${label}`),
   certificate: (label: string) => get<CertificateDetail>(`/api/certificate/${label}`),
   revoke: async (label: string, adminToken: string): Promise<RevokeResult> => {
