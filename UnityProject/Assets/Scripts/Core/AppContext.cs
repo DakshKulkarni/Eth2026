@@ -23,7 +23,6 @@ namespace MrTrainer.Core
         public CoachService coach;
         public FrameCapture frames;
         public CoachBanner banner;
-        public NamePadPanel namePad;
         public CertificatePanel certPanel;
         public bool sendFrames = true;
 
@@ -32,7 +31,6 @@ namespace MrTrainer.Core
             if (coach == null) coach = gameObject.AddComponent<CoachService>();
             if (frames == null) frames = gameObject.AddComponent<FrameCapture>();
             if (banner == null) banner = gameObject.AddComponent<CoachBanner>();
-            if (namePad == null) namePad = gameObject.AddComponent<NamePadPanel>();
             if (certPanel == null) certPanel = gameObject.AddComponent<CertificatePanel>();
         }
 
@@ -48,7 +46,6 @@ namespace MrTrainer.Core
             highlight.Init(machine, head, stepCard.transform, ui);
             toasts.Init(ui, head, machine, stepCard.transform);
             modal.Init(ui, head);
-            namePad.Init(ui, head);
             certPanel.Init(ui, head);
             banner.Build(ui, stepCard.transform);
             frames.Init(head);
@@ -58,7 +55,6 @@ namespace MrTrainer.Core
 
             flow.Init(procedure, machine, highlight, stepCard, modal, toasts, placer,
                 new RemoteCheckpointService(coach), ui, head, coach, banner, api);
-            flow.namePad = namePad;
             flow.certPanel = certPanel;
 
             yield return new WaitForSeconds(0.6f);

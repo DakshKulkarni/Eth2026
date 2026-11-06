@@ -15,8 +15,8 @@ namespace MrTrainer.Guidance
         HighlightService highlight;
         StepCardPanel card;
         ModalPanel modal;
-        public NamePadPanel namePad;
         public CertificatePanel certPanel;
+        string activeCheckin;
         ToastHost toasts;
         MachinePlacer placer;
         ICheckpointService judge;
@@ -101,7 +101,92 @@ namespace MrTrainer.Guidance
             modal.Show(spec);
         }
 
+        // Test mode needs a World-verified human who checked in on a phone first. Learn mode is open.
         void Begin(TrainingMode mode)
+        {
+            modal.Hide();
+            if (mode == TrainingMode.Test) StartCoroutine(GateThenBegin(mode));
+            else BeginCore(mode, null);
+        }
+
+        IEnumerator GateThenBegin(TrainingMode mode)
+        {
+            if (activeCheckin != null)
+            {
+                BeginCore(mode, activeCheckin);
+                yield break;
+            }
+            modal.Show(new ModalSpec
+            {
+                title = "Looking for your check-in",
+                chip = "WORLD",
+                accent = ui.T.accent,
+                body = "Checking whether a verified worker is waiting."
+            });
+            ApiResult<WorkerReadyResponse> ready = null;
+            yield return api.WorkerReady(r => ready = r);
+            modal.Hide();
+            if (!ready.Ok)
+            {
+                ShowOffline("Could not reach the backend at " + Config.BackendUrl + ".", () => Begin(mode));
+                yield break;
+            }
+            if (!ready.value.required)
+            {
+                BeginCore(mode, null);
+                yield break;
+            }
+            if (!ready.value.ready) ShowCheckinNeeded();
+            else ShowCheckinConfirm(ready.value);
+        }
+
+        void ShowCheckinNeeded()
+        {
+            string page = Config.BackendUrl.Replace("https://", "").Replace("http://", "") + "/checkin";
+            var spec = new ModalSpec
+            {
+                title = "Check in first",
+                chip = "WORLD",
+                accent = ui.T.warning,
+                body = "Test mode needs a quick human check on your phone. Take the headset off, check in, then come back."
+            };
+            spec.bullets.Add("Open " + page + " on your phone");
+            spec.bullets.Add("Tap Verify with World and approve (about 10 seconds)");
+            spec.bullets.Add("Name your licence if you like, then tap Check again here");
+            spec.buttons.Add(new ModalButton { label = "Check again", color = ui.T.warning, click = () => Begin(TrainingMode.Test) });
+            spec.buttons.Add(new ModalButton { label = "Learn mode", color = ui.T.accent, click = () => Begin(TrainingMode.Learn) });
+            ProceduralSfx.Play(ProceduralSfx.Error, head.position);
+            modal.Show(spec);
+        }
+
+        void ShowCheckinConfirm(WorkerReadyResponse worker)
+        {
+            string who = string.IsNullOrEmpty(worker.alias) ? "verified worker" : worker.alias;
+            var spec = new ModalSpec
+            {
+                title = "Start as " + who + "?",
+                chip = "VERIFIED",
+                accent = ui.T.success,
+                body = "World confirmed a real person checked in. Your Test starts now, and the result is tied to this check-in."
+            };
+            spec.bullets.Add("Human check: World, id " + worker.humanTag);
+            spec.bullets.Add(string.IsNullOrEmpty(worker.alias)
+                ? "Licence name: generated"
+                : "Licence name: " + worker.alias.ToLowerInvariant() + "-cert.smartician.eth");
+            spec.buttons.Add(new ModalButton { label = "Start Test", color = ui.T.success, click = () => BeginCore(TrainingMode.Test, worker.checkinId) });
+            spec.buttons.Add(new ModalButton { label = "Not me", color = ui.T.border, click = () => StartCoroutine(NotMe(worker.checkinId)) });
+            ProceduralSfx.Play(ProceduralSfx.Success, head.position);
+            modal.Show(spec);
+        }
+
+        IEnumerator NotMe(string checkinId)
+        {
+            ApiResult<WorkerReadyResponse> ignored = null;
+            yield return api.CancelCheckin(checkinId, r => ignored = r);
+            Begin(TrainingMode.Test);
+        }
+
+        void BeginCore(TrainingMode mode, string checkinId)
         {
             modal.Hide();
             highlight.Clear();
@@ -113,10 +198,10 @@ namespace MrTrainer.Guidance
             offlineShown = false;
             runner = null;
             banner.Hide();
-            StartCoroutine(Boot(mode));
+            StartCoroutine(Boot(mode, checkinId));
         }
 
-        IEnumerator Boot(TrainingMode mode)
+        IEnumerator Boot(TrainingMode mode, string checkinId)
         {
             bool ok = false;
             yield return coach.StartSession(mode, r => ok = r);
@@ -124,6 +209,30 @@ namespace MrTrainer.Guidance
             {
                 ShowOffline("Could not reach the AI technician at " + Config.BackendUrl + ".", () => Begin(mode));
                 yield break;
+            }
+
+            string verifiedName = null;
+            if (checkinId != null)
+            {
+                ApiResult<ClaimResponse> claim = null;
+                yield return api.Claim(coach.SessionId, checkinId, r => claim = r);
+                if (!claim.Ok)
+                {
+                    activeCheckin = null;
+                    coach.StopSession();
+                    var spec = new ModalSpec
+                    {
+                        title = "Check in again",
+                        chip = "WORLD",
+                        accent = ui.T.warning,
+                        body = "Your check-in is no longer valid, so Test mode stays locked. Check in on your phone again."
+                    };
+                    spec.buttons.Add(new ModalButton { label = "Check again", color = ui.T.warning, click = () => Begin(TrainingMode.Test) });
+                    modal.Show(spec);
+                    yield break;
+                }
+                activeCheckin = checkinId;
+                verifiedName = string.IsNullOrEmpty(claim.value.alias) ? "verified worker" : claim.value.alias;
             }
 
             banner.SetChecking(false);
@@ -134,7 +243,8 @@ namespace MrTrainer.Guidance
             runner.Completed += OnCompleted;
             runner.Start(mode);
 
-            toasts.Hud(mode == TrainingMode.Learn ? "Learn mode: follow the highlights" : "Test mode: no highlights",
+            toasts.Hud(verifiedName != null ? "Test mode: verified human, " + verifiedName
+                    : mode == TrainingMode.Learn ? "Learn mode: follow the highlights" : "Test mode: no highlights",
                 mode == TrainingMode.Learn ? ui.T.accent : ui.T.warning);
         }
 
@@ -304,6 +414,12 @@ namespace MrTrainer.Guidance
             StartCoroutine(Complete());
         }
 
+        class CertState
+        {
+            public ApiResult<CertificateResponse> certificate;
+            public ApiResult<CredentialResponse> credential;
+        }
+
         IEnumerator Complete()
         {
             bool test = runner.Mode == TrainingMode.Test;
@@ -320,29 +436,33 @@ namespace MrTrainer.Guidance
             coach.StopSession();
 
             bool passed = test && runner.TestPassed;
-            ApiResult<CertificateResponse> certificate = null;
-            ApiResult<CredentialResponse> credential = null;
-            if (passed && saved.Ok)
-            {
-                string certName = null;
-                bool named = false;
-                if (namePad != null)
-                {
-                    namePad.Show("Name your certificate", n => { certName = n; named = true; });
-                    yield return new WaitUntil(() => named);
-                }
-                modal.Show(new ModalSpec
-                {
-                    title = "Issuing your ENS certificate",
-                    chip = "ENS",
-                    accent = ui.T.accent,
-                    body = "Writing the certificate to ENS on Sepolia and checking it live. This can take up to a minute."
-                });
-                yield return api.IssueCertificate(coach.SessionId, certName, r => certificate = r);
-                if (certificate.Ok)
-                    yield return api.Credential(LabelOf(certificate.value.name), r => credential = r);
-            }
+            var state = new CertState();
+            if (passed && saved.Ok) yield return Certify(state);
+            ShowResult(test, passed, saved, state);
+        }
 
+        // The licence name and the proof of human come from the worker's phone check-in, which the backend already holds.
+        IEnumerator Certify(CertState state)
+        {
+            state.certificate = null;
+            state.credential = null;
+            modal.Show(new ModalSpec
+            {
+                title = "Issuing your ENS licence",
+                chip = "ENS",
+                accent = ui.T.accent,
+                body = "Writing the licence to ENS on Sepolia and checking it live. This can take up to a minute."
+            });
+            yield return api.IssueCertificate(coach.SessionId, null, r => state.certificate = r);
+            if (state.certificate.Ok)
+            {
+                activeCheckin = null;
+                yield return api.Credential(LabelOf(state.certificate.value.name), r => state.credential = r);
+            }
+        }
+
+        void ShowResult(bool test, bool passed, ApiResult<FinalizeResponse> saved, CertState state)
+        {
             var spec = new ModalSpec();
             if (!test)
             {
@@ -372,7 +492,9 @@ namespace MrTrainer.Guidance
                 spec.buttons.Add(new ModalButton { label = "Retry test", color = ui.T.warning, click = () => Begin(TrainingMode.Test) });
             }
             AddEvidence(spec, saved);
-            if (passed) AddCertificate(spec, saved.Ok, certificate, credential);
+            if (passed) AddCertificate(spec, saved.Ok, state.certificate, state.credential);
+            var certificate = state.certificate;
+            var credential = state.credential;
             if (passed && saved.Ok && certificate != null && certificate.Ok && certPanel != null)
                 spec.buttons.Insert(0, new ModalButton
                 {
@@ -380,8 +502,22 @@ namespace MrTrainer.Guidance
                     color = ui.T.success,
                     click = () => ViewCertificate(spec, saved.value, certificate.value, credential != null && credential.Ok ? credential.value : null)
                 });
+            else if (passed && saved.Ok && certificate != null && !certificate.Ok)
+                spec.buttons.Insert(0, new ModalButton
+                {
+                    label = "Try licence again",
+                    color = ui.T.warning,
+                    click = () => StartCoroutine(RetryCertify(test, passed, saved, state))
+                });
             ProceduralSfx.Play(ProceduralSfx.Success, head.position);
             modal.Show(spec);
+        }
+
+        IEnumerator RetryCertify(bool test, bool passed, ApiResult<FinalizeResponse> saved, CertState state)
+        {
+            modal.Hide();
+            yield return Certify(state);
+            ShowResult(test, passed, saved, state);
         }
 
         void ViewCertificate(ModalSpec back, FinalizeResponse saved, CertificateResponse cert, CredentialResponse live)
@@ -431,7 +567,11 @@ namespace MrTrainer.Guidance
             spec.bullets.Add("ENS certificate: " + c.name);
             spec.bullets.Add("Valid until " + DateOnly(c.expiresAt));
             if (credential != null && credential.Ok)
+            {
                 spec.bullets.Add("Live ENS check: " + (credential.value.valid ? "VALID" : "NOT VALID (" + credential.value.reason + ")"));
+                if (!string.IsNullOrEmpty(credential.value.human))
+                    spec.bullets.Add("Proof of human on the licence: " + credential.value.human);
+            }
         }
 
         static string LabelOf(string name)

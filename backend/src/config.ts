@@ -23,6 +23,9 @@ const schema = z.object({
   ZG_REGISTRY_ADDRESS: z.string().optional(),
   ZG_TTS_MODEL: z.string().default('minimax-speech-02-turbo'),
   ZG_TTS_VOICE: z.string().default('alloy'),
+  WORLD_ISSUER: z.string().url().default('https://sandbox.auth.world.org'),
+  WORLD_CLIENT_ID: z.string().optional(),
+  WORLD_CLIENT_SECRET: z.string().optional(),
 });
 
 const present = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined && v !== ''));

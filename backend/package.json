@@ -22,6 +22,7 @@
     "ens:setup": "tsx --env-file-if-exists=.env scripts/ens-setup.ts",
     "ens:grant-profile": "tsx --env-file-if-exists=.env scripts/ens-grant-profile.ts",
     "proof": "tsx --env-file-if-exists=.env scripts/proof.ts",
+    "smoke:world": "tsx scripts/smoke-world.ts",
     "ens:status": "tsx --env-file-if-exists=.env scripts/ens-status.ts",
     "wallet:new": "tsx scripts/new-wallet.ts",
     "compile:registry": "tsx scripts/compile-registry.ts",
@@ -31,6 +32,8 @@
     "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",
     "ethers": "^6.13.1",
     "fastify": "^5.0.0",
+    "jose": "^5.10.0",
+    "qrcode": "^1.5.4",
     "solc": "^0.8.38",
     "undici": "^7.30.2",
     "viem": "^2.57.16",
@@ -38,6 +41,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

@@ -100,6 +100,7 @@ export interface CredentialCheck {
   alias: string | null;
   class: string | null;
   description: string | null;
+  human: string | null;
 }
 
 export async function checkCredential(label: string): Promise<CredentialCheck> {
@@ -108,7 +109,7 @@ export async function checkCredential(label: string): Promise<CredentialCheck> {
   const reason: CredentialCheck['reason'] =
     state.status === 'available' ? 'revoked_or_unknown' : state.status === 'reserved' ? 'reserved' : expired ? 'expired' : 'valid';
   const records =
-    reason === 'valid' ? await readTexts(label, ['mrt.evidence', 'mrt.verdict', 'mrt.issuedAt', 'mrt.approval', 'alias', 'class', 'description']) : {};
+    reason === 'valid' ? await readTexts(label, ['mrt.evidence', 'mrt.verdict', 'mrt.issuedAt', 'mrt.approval', 'alias', 'class', 'description', 'mrt.human']) : {};
   return {
     name: fullName(label),
     valid: reason === 'valid',
@@ -122,6 +123,7 @@ export async function checkCredential(label: string): Promise<CredentialCheck> {
     alias: records['alias'] ?? null,
     class: records['class'] ?? null,
     description: records['description'] ?? null,
+    human: records['mrt.human'] ?? null,
   };
 }
 

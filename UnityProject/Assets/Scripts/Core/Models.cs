@@ -165,6 +165,24 @@ namespace MrTrainer.Core
         [JsonProperty("class")]
         public string className;
         public string description;
+        public string human;
+    }
+
+    public class WorkerReadyResponse
+    {
+        public bool required;
+        public bool ready;
+        public string checkinId;
+        public string alias;
+        public string humanTag;
+        public int secondsLeft;
+    }
+
+    public class ClaimResponse
+    {
+        public bool ok;
+        public string alias;
+        public string humanTag;
     }
 
     public class FinalizeRequest

@@ -14,10 +14,14 @@ import { uploadBundle } from './episode/storage.js';
 import { coach } from './judge/coach.js';
 import { observeSchema } from './judge/schema.js';
 import { createSession, getSession } from './session.js';
+import { readFileSync } from 'node:fs';
 import { loadProcedure } from './shared/procedure.js';
 import { speak } from './zerog/speech.js';
+import { cancelCheckin, claimCheckin, createCheckin, expireIfDue, getCheckin, publicView, readyCheckin, setName } from './world/checkins.js';
+import { worldConfigured } from './world/oidc.js';
 
 const procedure = loadProcedure();
+const checkinPage = readFileSync(new URL('../public/checkin.html', import.meta.url), 'utf8');
 const ttsSchema = z.object({ text: z.string().min(1).max(400), sessionId: z.string().optional() });
 const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 const certificateSchema = z.object({
@@ -37,6 +41,7 @@ export function registerRoutes(app: FastifyInstance): void {
     version: '0.1.0',
     zerog: config.ZG_API_KEY ? 'configured' : 'no_key',
     model: config.ZG_COACH_MODEL,
+    world: worldConfigured() ? config.WORLD_ISSUER : 'not_configured',
     evidence: {
       wallet: !config.AGENT_PRIVATE_KEY ? 'no_key' : keyProblem() ? 'invalid_key' : 'configured',
       registry: config.ZG_REGISTRY_ADDRESS ?? 'not_deployed',
@@ -140,6 +145,72 @@ export function registerRoutes(app: FastifyInstance): void {
     return { revoked: true, revokeTx: result.revokeTx, link: explorer.sepoliaTx(result.revokeTx), credential: await checkCredential(req.params.label) };
   });
 
+  // Worker check-in: a phone page proves the worker is a real human through World before Test mode unlocks.
+  app.get('/checkin', async (_req, reply) => reply.type('text/html; charset=utf-8').send(checkinPage));
+
+  app.post('/checkin/start', async (_req, reply) => {
+    if (!worldConfigured()) return reply.code(503).send({ error: 'world_not_configured' });
+    const created = await createCheckin();
+    if (!created.ok) return reply.code(502).send({ error: 'world_unavailable', reason: created.reason });
+    const c = created.checkin;
+    return { ...publicView(c), userCode: c.userCode, link: c.link, qrPng: c.qrPng };
+  });
+
+  app.get<{ Params: { id: string } }>('/checkin/:id', async (req, reply) => {
+    const c = getCheckin(req.params.id);
+    if (!c) return reply.code(404).send({ error: 'unknown_checkin' });
+    expireIfDue(c);
+    return publicView(c);
+  });
+
+  app.post<{ Params: { id: string } }>('/checkin/:id/name', async (req, reply) => {
+    const c = getCheckin(req.params.id);
+    if (!c) return reply.code(404).send({ error: 'unknown_checkin' });
+    expireIfDue(c);
+    if (c.status !== 'verified' || c.certified) return reply.code(409).send({ error: 'not_verified' });
+    const body = z.object({ name: z.string().max(60) }).safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    const saved = setName(c, body.data.name);
+    const slug = slugify(saved);
+    return { name: saved, preview: slug.length >= 2 ? `${slug}-cert.smartician.eth` : null };
+  });
+
+  app.post<{ Params: { id: string } }>('/checkin/:id/cancel', async (req, reply) => {
+    const c = cancelCheckin(req.params.id);
+    if (!c) return reply.code(404).send({ error: 'unknown_checkin' });
+    return publicView(c);
+  });
+
+  // The headset asks whether a verified worker is waiting. Without World configured, Test mode is not gated.
+  app.get('/worker/ready', async () => {
+    if (!worldConfigured()) return { required: false, ready: false };
+    const c = readyCheckin();
+    if (!c) return { required: true, ready: false };
+    return { required: true, ready: true, checkinId: c.id, alias: displayName(c.name ?? undefined) || null, humanTag: c.humanHash?.slice(0, 8) ?? null, secondsLeft: publicView(c).secondsLeft };
+  });
+
+  app.post<{ Params: { id: string } }>('/session/:id/claim', async (req, reply) => {
+    const session = getSession(req.params.id);
+    if (!session) return reply.code(404).send({ error: 'unknown_session' });
+    const body = z.object({ checkinId: z.string() }).safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    const claimed = claimCheckin(body.data.checkinId, session.id);
+    if (!claimed.ok) return reply.code(409).send({ error: claimed.reason });
+    const c = claimed.checkin;
+    session.human = { checkinId: c.id, humanHash: c.humanHash ?? '', name: c.name, acr: c.identity?.acr ?? null, verifiedAt: new Date(c.verifiedAt ?? Date.now()).toISOString() };
+    // The proof of human becomes part of the evidence that is stored on 0G.
+    session.log.append('human_verified', {
+      provider: 'world',
+      issuer: config.WORLD_ISSUER,
+      humanHash: session.human.humanHash,
+      acr: session.human.acr,
+      amr: c.identity?.amr ?? [],
+      verifiedAt: session.human.verifiedAt,
+    });
+    activity('claim', { session: session.id.slice(0, 8), checkin: c.id.slice(0, 8), human: session.human.humanHash.slice(0, 8) });
+    return { ok: true, alias: displayName(c.name ?? undefined) || null, humanTag: session.human.humanHash.slice(0, 8) };
+  });
+
   app.post<{ Params: { id: string } }>('/session/:id/certificate', async (req, reply) => {
     const session = getSession(req.params.id);
     if (!session) return reply.code(404).send({ error: 'unknown_session' });
@@ -150,15 +221,39 @@ export function registerRoutes(app: FastifyInstance): void {
     const body = certificateSchema.safeParse(req.body ?? {});
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
 
-    const issued = await issueCertificate({
-      label: await chooseCertLabel(body.data.name, session.id),
-      holder: body.data.holder ?? loadDeployment().issuer,
-      validityDays: body.data.validityDays,
-      evidenceRoot: session.finalized.rootHash,
-      outcome: session.finalized.outcome,
-      displayName: displayName(body.data.name),
-    });
+    // With World configured, a certificate needs a verified human bound to this session, used once.
+    const checkin = worldConfigured() && session.human ? getCheckin(session.human.checkinId) : undefined;
+    if (worldConfigured()) {
+      if (checkin) expireIfDue(checkin);
+      if (!session.human || !checkin || checkin.status !== 'verified') {
+        activity('certificate_blocked', { session: session.id.slice(0, 8), checkin: checkin?.status ?? 'none' });
+        return reply.code(403).send({ error: 'human_required', status: checkin?.status ?? 'none' });
+      }
+      if (checkin.certified || checkin.issuing) return reply.code(409).send({ error: 'checkin_already_used' });
+      checkin.issuing = true;
+    }
+    const certName = body.data.name ?? session.human?.name ?? undefined;
+
+    let issued: Awaited<ReturnType<typeof issueCertificate>>;
+    try {
+      issued = await issueCertificate({
+        label: await chooseCertLabel(certName, session.id),
+        holder: body.data.holder ?? loadDeployment().issuer,
+        validityDays: body.data.validityDays,
+        evidenceRoot: session.finalized.rootHash,
+        outcome: session.finalized.outcome,
+        displayName: displayName(certName),
+        human: session.human ? `world:${new URL(config.WORLD_ISSUER).hostname.startsWith('sandbox') ? 'sandbox' : 'production'}:${session.human.humanHash.slice(0, 12)}:${session.human.acr ?? 'none'}` : undefined,
+      });
+    } catch (err) {
+      if (checkin) checkin.issuing = false;
+      throw err;
+    }
     activity('certificate', { session: session.id.slice(0, 8), ok: issued.ok, name: issued.ok ? issued.name : null, reason: issued.ok ? null : issued.reason });
+    if (checkin) {
+      checkin.issuing = false;
+      if (issued.ok) checkin.certified = true;
+    }
     if (!issued.ok) return reply.code(502).send({ error: 'issue_failed', reason: issued.reason });
     session.certificate = {
       name: issued.name,

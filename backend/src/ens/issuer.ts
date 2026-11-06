@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { config, keyProblem } from '../config.js';
-import { ABI, ISSUER_TEXT_KEYS, PARENT_NAME, PROFILE_TEXT_KEYS } from './constants.js';
+import { ABI, HUMAN_TEXT_KEYS, ISSUER_TEXT_KEYS, PARENT_NAME, PROFILE_TEXT_KEYS } from './constants.js';
 import { loadDeployment } from './deployment.js';
 
 export type TxResult<T> = ({ ok: true } & T) | { ok: false; reason: string };
@@ -24,6 +24,7 @@ export interface IssueInput {
   evidenceRoot: string;
   outcome: string;
   displayName?: string;
+  human?: string;
 }
 
 export interface IssueResult {
@@ -32,6 +33,7 @@ export interface IssueResult {
   issueTx: string;
   recordsTx: string;
   profileTx: string | null;
+  humanTx: string | null;
 }
 
 export async function issueCertificate(input: IssueInput): Promise<TxResult<IssueResult>> {
@@ -58,6 +60,7 @@ export async function issueCertificate(input: IssueInput): Promise<TxResult<Issu
     if (!writtenReceipt || writtenReceipt.status !== 1) return { ok: false, reason: 'records transaction reverted' };
 
     const profileTx = deployment.profileRoles ? await writeProfile(resolver, name, input) : null;
+    const humanTx = deployment.humanRoles && input.human ? await writeHuman(resolver, name, input.human) : null;
 
     return {
       ok: true,
@@ -66,6 +69,7 @@ export async function issueCertificate(input: IssueInput): Promise<TxResult<Issu
       issueTx: issuedReceipt.hash,
       recordsTx: writtenReceipt.hash,
       profileTx,
+      humanTx,
     };
   } catch (err) {
     return { ok: false, reason: message(err) };
@@ -83,6 +87,18 @@ async function writeProfile(resolver: ethers.Contract, name: string, input: Issu
     const calls = PROFILE_TEXT_KEYS.filter((key) => values[key].length > 0).map((key) =>
       resolverIface.encodeFunctionData('setText', [name, key, values[key]]),
     );
+    const tx = (await resolver.getFunction('multicall')(calls)) as ethers.ContractTransactionResponse;
+    const receipt = await tx.wait();
+    return receipt && receipt.status === 1 ? receipt.hash : null;
+  } catch {
+    return null;
+  }
+}
+
+// Written separately so a missing permission for this key cannot undo the profile records.
+async function writeHuman(resolver: ethers.Contract, name: string, value: string): Promise<string | null> {
+  try {
+    const calls = HUMAN_TEXT_KEYS.map((key) => resolverIface.encodeFunctionData('setText', [name, key, value]));
     const tx = (await resolver.getFunction('multicall')(calls)) as ethers.ContractTransactionResponse;
     const receipt = await tx.wait();
     return receipt && receipt.status === 1 ? receipt.hash : null;

@@ -44,6 +44,21 @@ namespace MrTrainer.Core
             return Get("/machine/" + label, done, 20);
         }
 
+        public IEnumerator WorkerReady(Action<ApiResult<WorkerReadyResponse>> done)
+        {
+            return Get("/worker/ready", done, 12);
+        }
+
+        public IEnumerator Claim(string sessionId, string checkinId, Action<ApiResult<ClaimResponse>> done)
+        {
+            return Post("/session/" + sessionId + "/claim", new { checkinId }, done, 15);
+        }
+
+        public IEnumerator CancelCheckin(string checkinId, Action<ApiResult<WorkerReadyResponse>> done)
+        {
+            return Post("/checkin/" + checkinId + "/cancel", new { }, done, 12);
+        }
+
         public IEnumerator Credential(string label, Action<ApiResult<CredentialResponse>> done)
         {
             return Get("/credential/" + label, done, 30);

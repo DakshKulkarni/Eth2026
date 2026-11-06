@@ -29,7 +29,16 @@ export interface Certificate {
   links: { issueTx: string; recordsTx: string };
 }
 
+export interface VerifiedHuman {
+  checkinId: string;
+  humanHash: string;
+  name: string | null;
+  acr: string | null;
+  verifiedAt: string;
+}
+
 export interface Session {
+  human: VerifiedHuman | null;
   certificate: Certificate | null;
   id: string;
   startedAt: string;
@@ -54,6 +63,7 @@ export function createSession(): Session {
     log: new EpisodeLog(),
     finalized: null,
     certificate: null,
+    human: null,
   };
   sessions.set(session.id, session);
   return session;

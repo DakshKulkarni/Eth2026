@@ -18,6 +18,8 @@ export const ROLE_SET_TEXT = 1n << 4n;
 export const ISSUER_TEXT_KEYS = ['mrt.evidence', 'mrt.verdict', 'mrt.issuedAt'] as const;
 // Profile records on the certificate: ENSIP-18 alias and description, ENSIP-27 class.
 export const PROFILE_TEXT_KEYS = ['alias', 'description', 'class'] as const;
+// Proof-of-human record written after a World check-in: provider, environment, a short hash and the credential class.
+export const HUMAN_TEXT_KEYS = ['mrt.human'] as const;
 export const APPROVER_TEXT_KEYS = ['mrt.approval'] as const;
 
 export const ABI = {
