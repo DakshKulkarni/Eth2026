@@ -24,6 +24,7 @@ namespace MrTrainer.Core
         public FrameCapture frames;
         public CoachBanner banner;
         public CertificatePanel certPanel;
+        public LiveStreamer live;
         public bool sendFrames = true;
 
         void Awake()
@@ -32,6 +33,7 @@ namespace MrTrainer.Core
             if (frames == null) frames = gameObject.AddComponent<FrameCapture>();
             if (banner == null) banner = gameObject.AddComponent<CoachBanner>();
             if (certPanel == null) certPanel = gameObject.AddComponent<CertificatePanel>();
+            if (live == null) live = gameObject.AddComponent<LiveStreamer>();
         }
 
         IEnumerator Start()
@@ -52,6 +54,7 @@ namespace MrTrainer.Core
             coach.sendFrames = sendFrames;
             var api = new ApiClient(Config.BackendUrl);
             coach.Init(api, machine, frames, head);
+            live.Init(api, frames);
 
             flow.Init(procedure, machine, highlight, stepCard, modal, toasts, placer,
                 new RemoteCheckpointService(coach), ui, head, coach, banner, api);

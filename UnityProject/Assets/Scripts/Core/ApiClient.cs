@@ -74,6 +74,22 @@ namespace MrTrainer.Core
             return Post("/session/" + sessionId + "/finalize", new FinalizeRequest { outcome = outcome }, done, 120);
         }
 
+        // Sends one JPEG frame for the live view. Failures are not shown to the worker; the stream just skips.
+        public IEnumerator LiveFrame(byte[] jpeg, int sequence, Action<bool> done)
+        {
+            using (var req = new UnityWebRequest(baseUrl + "/live/frame", "POST"))
+            {
+                req.uploadHandler = new UploadHandlerRaw(jpeg);
+                req.downloadHandler = new DownloadHandlerBuffer();
+                req.SetRequestHeader("Content-Type", "image/jpeg");
+                req.SetRequestHeader("x-seq", sequence.ToString());
+                if (!string.IsNullOrEmpty(Config.LiveKey)) req.SetRequestHeader("x-live-key", Config.LiveKey);
+                req.timeout = 6;
+                yield return req.SendWebRequest();
+                done(req.result == UnityWebRequest.Result.Success);
+            }
+        }
+
         public IEnumerator Tts(string text, string sessionId, Action<ApiResult<AudioClip>> done)
         {
             string url = baseUrl + "/tts";

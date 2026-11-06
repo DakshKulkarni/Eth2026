@@ -5,13 +5,13 @@ import { config } from './config.js';
 // as a motion-JPEG stream. Nothing is stored; only the newest frame is kept in memory.
 const BOUNDARY = 'frame';
 const MAX_BYTES = 400_000;
-const MIN_GAP_MS = 120; // at most about 8 frames per second are accepted
+const MAX_PER_SECOND = 30; // a budget per second, so bursts from a jittery network are not refused
 const ACTIVE_MS = 6000;
 
 let latest: Buffer | null = null;
 let lastAt = 0;
-let lastAccepted = 0;
 let totalFrames = 0;
+let lastSeq = -1;
 const recent: number[] = [];
 const viewers = new Set<NodeJS.WritableStream>();
 
@@ -44,8 +44,13 @@ export function registerLive(app: FastifyInstance): void {
     if (!Buffer.isBuffer(body) || body.length < 200) return reply.code(400).send({ error: 'invalid_frame' });
     if (body[0] !== 0xff || body[1] !== 0xd8) return reply.code(400).send({ error: 'not_a_jpeg' });
     const now = Date.now();
-    if (now - lastAccepted < MIN_GAP_MS) return reply.code(429).send({ error: 'too_fast' });
-    lastAccepted = now;
+    if (recent.filter((t) => now - t < 1000).length >= MAX_PER_SECOND) return reply.code(429).send({ error: 'too_fast' });
+    // Several frames can be in flight at once, so one that arrives after a newer one is dropped, not shown.
+    const seq = Number(req.headers['x-seq']);
+    if (Number.isFinite(seq)) {
+      if (seq <= lastSeq && lastSeq - seq < 1000) return { ok: true, dropped: true };
+      lastSeq = seq;
+    }
     latest = body;
     lastAt = now;
     totalFrames++;
@@ -78,6 +83,7 @@ export function registerLive(app: FastifyInstance): void {
       connection: 'keep-alive',
       'x-accel-buffering': 'no',
     });
+    raw.flushHeaders();
     if (latest) broadcastTo(raw, latest);
     viewers.add(raw);
     req.raw.on('close', () => viewers.delete(raw));

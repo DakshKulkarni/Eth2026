@@ -12,6 +12,10 @@ namespace MrTrainer.Guidance
         Camera cam;
         RenderTexture target;
         Texture2D readback;
+        RenderTexture liveTarget;
+        Texture2D liveReadback;
+        int liveWidth;
+        int liveHeight;
 
         public void Init(Transform headTransform)
         {
@@ -29,6 +33,55 @@ namespace MrTrainer.Guidance
             target = new RenderTexture(Width, Height, 16);
             cam.targetTexture = target;
             readback = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+        }
+
+        // Renders the worker's view into a reusable texture for the live video and returns it, without waiting for the GPU.
+        public RenderTexture RenderLive(int width, int height)
+        {
+            if (cam == null || head == null) return null;
+            if (liveTarget == null || liveWidth != width || liveHeight != height)
+            {
+                if (liveTarget != null) liveTarget.Release();
+                if (liveReadback != null) Destroy(liveReadback);
+                liveTarget = new RenderTexture(width, height, 16);
+                liveReadback = new Texture2D(width, height, TextureFormat.RGB24, false);
+                liveWidth = width;
+                liveHeight = height;
+            }
+            cam.transform.SetPositionAndRotation(head.position, head.rotation);
+            cam.targetTexture = liveTarget;
+            cam.Render();
+            cam.targetTexture = target;
+            return liveTarget;
+        }
+
+        // A larger picture for the live dashboard view, rendered from the worker's head position.
+        public byte[] CaptureJpeg(int width, int height, int quality)
+        {
+            if (cam == null || head == null) return null;
+            if (liveTarget == null || liveWidth != width || liveHeight != height)
+            {
+                if (liveTarget != null) liveTarget.Release();
+                if (liveReadback != null) Destroy(liveReadback);
+                liveTarget = new RenderTexture(width, height, 16);
+                liveReadback = new Texture2D(width, height, TextureFormat.RGB24, false);
+                liveWidth = width;
+                liveHeight = height;
+            }
+            cam.transform.SetPositionAndRotation(head.position, head.rotation);
+            cam.targetTexture = liveTarget;
+            cam.Render();
+            cam.targetTexture = target;
+            var previous = RenderTexture.active;
+            RenderTexture.active = liveTarget;
+            liveReadback.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            RenderTexture.active = previous;
+            return liveReadback.EncodeToJPG(quality);
+        }
+
+        void OnDestroy()
+        {
+            if (liveTarget != null) liveTarget.Release();
         }
 
         public string Capture()

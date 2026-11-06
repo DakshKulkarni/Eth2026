@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronRight, ExternalLink, Maximize2, Radio, Video } from 'lucide-react';
+import { Check, ChevronRight, ExternalLink, FlipVertical2, Maximize2, Radio, Video } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { EventFeed } from '../components/EventFeed';
@@ -33,6 +33,14 @@ export function Live() {
   const status = useQuery({ queryKey: ['live-status'], queryFn: api.live, refetchInterval: 1500 });
   const wrap = useRef<HTMLDivElement>(null);
   const [epoch, setEpoch] = useState(0);
+  // The headset's GPU may hand the picture over upside down; this fixes it in the browser, and is remembered.
+  const [flip, setFlip] = useState(() => {
+    try { return localStorage.getItem('pd-live-flip') === '1'; } catch { return false; }
+  });
+  const toggleFlip = () => setFlip((f) => {
+    try { localStorage.setItem('pd-live-flip', f ? '0' : '1'); } catch { /* storage blocked */ }
+    return !f;
+  });
   const active = Boolean(status.data?.active);
 
   // The motion-JPEG stream is one long request; reopen it if it drops.
@@ -54,16 +62,19 @@ export function Live() {
       <div className="grid content-start gap-5">
         <Plate still>
           <div ref={wrap} className="relative aspect-video w-full overflow-hidden bg-black" style={{ borderRadius: 5 }}>
-            <img key={epoch} src={`/live/stream?e=${epoch}`} alt="Live view from the headset" className={cn('absolute inset-0 size-full object-contain transition-opacity duration-500', active ? 'opacity-100' : 'opacity-0')} />
+            <img key={epoch} src={`/live/stream?e=${epoch}`} alt="Live view from the headset" className={cn('absolute inset-0 size-full object-contain transition-opacity duration-500', active ? 'opacity-100' : 'opacity-0')} style={{ transform: flip ? 'scaleY(-1)' : undefined }} />
             {!active && <NoSignal />}
 
             <div className="absolute left-3 top-3 flex items-center gap-2">
               <span className="label flex items-center gap-2 border px-2.5 py-1.5 backdrop-blur-sm" style={{ borderRadius: 3, background: 'color-mix(in srgb, var(--bg) 70%, transparent)', borderColor: active ? 'var(--bad)' : 'var(--line)', color: active ? 'var(--bad)' : undefined }}>
-                <span className="lamp" style={{ ['--lamp' as string]: active ? 'var(--bad)' : 'var(--muted)' }} />{active ? 'Live' : 'Offline'}
+                <span className="lamp" style={{ ['--lamp' as string]: active ? 'var(--bad)' : 'var(--muted)' }} />{active ? 'Live video' : 'Offline'}
               </span>
               {active && <span className="label border border-line px-2.5 py-1.5 backdrop-blur-sm" style={{ borderRadius: 3, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }}>{status.data?.fps} fps · {status.data?.ageMs ?? 0} ms</span>}
             </div>
-            <button onClick={fullscreen} className="absolute right-3 top-3 grid size-9 place-items-center border border-line text-muted backdrop-blur-sm hover:text-ink" style={{ borderRadius: 4, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Full screen"><Maximize2 className="size-4" /></button>
+            <div className="absolute right-3 top-3 flex gap-2">
+              <button onClick={toggleFlip} className="grid size-9 place-items-center border text-muted backdrop-blur-sm hover:text-ink" style={{ borderRadius: 4, borderColor: flip ? 'var(--accent)' : 'var(--line)', color: flip ? 'var(--accent)' : undefined, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Flip the picture upside down" title="Flip upside down"><FlipVertical2 className="size-4" /></button>
+              <button onClick={fullscreen} className="grid size-9 place-items-center border border-line text-muted backdrop-blur-sm hover:text-ink" style={{ borderRadius: 4, background: 'color-mix(in srgb, var(--bg) 70%, transparent)' }} aria-label="Full screen"><Maximize2 className="size-4" /></button>
+            </div>
 
             <AnimatePresence>
               {caption && (
