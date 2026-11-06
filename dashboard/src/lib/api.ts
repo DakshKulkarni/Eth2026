@@ -115,6 +115,21 @@ export interface RevokeResult {
   link: string;
 }
 
+export interface Credential {
+  name: string;
+  valid: boolean;
+  reason: string;
+  expiresAt: string | null;
+  holder: string | null;
+  evidence: string | null;
+  verdict: string | null;
+  issuedAt: string | null;
+  alias: string | null;
+  class: string | null;
+  description: string | null;
+  human: string | null;
+}
+
 export interface WorkerReady {
   required: boolean;
   ready: boolean;
@@ -146,6 +161,7 @@ export const api = {
     delete r.checkinId; // never held in the dashboard
     return r;
   },
+  credential: (label: string) => get<Credential>(`/credential/${label}`),
   passport: (label: string) => get<Passport>(`/machine/${label}`),
   certificate: (label: string) => get<CertificateDetail>(`/api/certificate/${label}`),
   revoke: async (label: string, adminToken: string): Promise<RevokeResult> => {
