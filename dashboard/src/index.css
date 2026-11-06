@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/bricolage-grotesque";
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Bricolage Grotesque Variable", "Geist Variable", sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-g0: var(--g0);
+  --color-ens: var(--ens);
+  --color-world: var(--world);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+}
+
+/* Track colours stay the same in every theme so a track is always recognisable. */
+:root {
+  --g0: #c28bff;
+  --ens: #5aa2ff;
+  --world: #6ee7a8;
+  --ok: #5ee6a8;
+  --warn: #ffbd59;
+  --bad: #ff6b81;
+  color-scheme: dark;
+}
+
+[data-theme="aurora"] {
+  --bg: #07070d;
+  --surface: rgb(255 255 255 / 0.045);
+  --surface-2: rgb(255 255 255 / 0.075);
+  --line: rgb(255 255 255 / 0.085);
+  --ink: #edecf7;
+  --muted: #8f8cab;
+  --accent: #b794ff;
+  --shader-a: #2b1270;
+  --shader-b: #0b3a63;
+  --shader-c: #5b21b6;
+  --shader-strength: 0.9;
+}
+[data-theme="forge"] {
+  --bg: #0b0a08;
+  --surface: rgb(255 244 224 / 0.045);
+  --surface-2: rgb(255 244 224 / 0.08);
+  --line: rgb(255 240 210 / 0.1);
+  --ink: #f4efe4;
+  --muted: #9e9684;
+  --accent: #ffb43a;
+  --shader-a: #5c3604;
+  --shader-b: #1d2a34;
+  --shader-c: #8a4a0c;
+  --shader-strength: 0.85;
+}
+[data-theme="mint"] {
+  --bg: #050e0c;
+  --surface: rgb(220 255 240 / 0.045);
+  --surface-2: rgb(220 255 240 / 0.08);
+  --line: rgb(200 255 230 / 0.1);
+  --ink: #e6f7f0;
+  --muted: #84a89b;
+  --accent: #4be59a;
+  --shader-a: #054b3a;
+  --shader-b: #0a3f63;
+  --shader-c: #0f6b5f;
+  --shader-strength: 0.85;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+
+/* Frosted card with a hairline gradient border. */
+.glass {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 20px 50px -24px rgb(0 0 0 / 0.7);
+}
+
+/* A soft light that follows the pointer; the pointer position is set from JS. */
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--spot, var(--accent)) 22%, transparent), transparent 62%);
+}
+.spotlight:hover::before { opacity: 1; }
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--ink) 20%, color-mix(in srgb, var(--accent) 80%, white) 55%, var(--ink) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hash { font-family: var(--font-mono); font-size: 0.78em; letter-spacing: -0.01em; }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dot, var(--ok)) 55%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+.live-dot { width: 8px; height: 8px; border-radius: 99px; background: var(--dot, var(--ok)); animation: pulse-ring 1.8s ease-out infinite; }
+
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
