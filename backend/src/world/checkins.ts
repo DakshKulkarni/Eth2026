@@ -8,6 +8,8 @@ export type CheckinStatus = 'pending' | 'verified' | 'denied' | 'expired' | 'can
 
 // A verified check-in stays usable for this long, until a certificate is issued from it.
 export const VERIFIED_TTL_MS = 30 * 60 * 1000;
+// Once a session has taken a check-in, a long training run must not make it lapse before the licence is issued.
+export const CLAIMED_TTL_MS = 3 * 60 * 60 * 1000;
 const MAX_NAME = 24;
 
 export interface Checkin {
@@ -124,6 +126,7 @@ export function claimCheckin(id: string, sessionId: string): { ok: true; checkin
   if (c.status !== 'verified') return { ok: false, reason: `checkin_${c.status}` };
   if (c.certified) return { ok: false, reason: 'checkin_already_used' };
   c.claimedBy = sessionId;
+  c.useUntil = Math.max(c.useUntil ?? 0, Date.now() + CLAIMED_TTL_MS);
   activity('checkin_claimed', { checkin: c.id.slice(0, 8), session: sessionId.slice(0, 8) });
   return { ok: true, checkin: c };
 }

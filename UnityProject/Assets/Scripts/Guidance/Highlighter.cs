@@ -14,6 +14,7 @@ namespace MrTrainer.Guidance
         Transform label;
         LineRenderer line;
         Transform card;
+        Transform viewer;
         Color accent;
         MaterialPropertyBlock block;
 
@@ -21,6 +22,7 @@ namespace MrTrainer.Guidance
             Material hullMaterial, Material chevronMaterial, Material lineMaterial)
         {
             card = cardAnchor;
+            viewer = head;
             accent = ui.T.accent;
             block = new MaterialPropertyBlock();
             targetRenderers = control.GetComponentsInChildren<Renderer>();
@@ -81,7 +83,9 @@ namespace MrTrainer.Guidance
             Vector3 top = new Vector3(b.center.x, b.max.y, b.center.z);
             chevron.position = top + Vector3.up * (0.08f + 0.02f * Mathf.Sin(t * 4f));
             chevron.rotation = Quaternion.Euler(0f, t * 90f, 0f);
-            label.position = top + Vector3.up * 0.2f;
+            // Pulled towards the trainee so the machine never hides the label.
+            Vector3 labelSpot = top + Vector3.up * 0.2f;
+            label.position = viewer != null ? Vector3.MoveTowards(labelSpot, viewer.position, 0.3f) : labelSpot;
 
             if (card != null)
             {

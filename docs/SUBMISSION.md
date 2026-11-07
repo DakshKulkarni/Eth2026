@@ -13,7 +13,7 @@ Draft text for every written field, written from what is actually built and veri
 
 ## 1. Project name and short description
 
-**Project name:** MR Machine Trainer
+**Project name:** Smartician
 
 **Short description** (the sample showcase page limits this line to 60–100 characters; yours is 86):
 
@@ -27,7 +27,7 @@ Alternatives (88 and 87 characters):
 
 AI is starting to decide who is allowed to run dangerous machines. Today the training record lives in the training company's own database, so after an accident nobody outside can tell whether the record, or the AI's decision, was real.
 
-MR Machine Trainer is a mixed-reality trainer for a CNC vertical machining centre on the Meta Quest 3. The worker stands in front of a virtual machine with real interlocks and works through a 22-step start-up, set-up and run procedure. An AI technician running on 0G watches every action and the machine's state, corrects mistakes by voice within about three seconds, and must pass the worker at four safety checkpoints. In Test mode there are no hints.
+Smartician is a mixed-reality trainer for a CNC vertical machining centre on the Meta Quest 3. The worker stands in front of a virtual machine with real interlocks and works through a 22-step start-up, set-up and run procedure. An AI technician running on 0G watches every action and the machine's state, corrects mistakes by voice within about three seconds, and must pass the worker at four safety checkpoints. In Test mode there are no hints.
 
 Every session becomes a hash-chained episode log stored on 0G Storage, with a 0G request id for each AI decision, and its root hash is anchored on 0G Chain. A worker who passes receives a licence: an expiring, revocable ENS subname of smartician.eth (ENSv2 on Sepolia) whose key-value records point back to that evidence. Before Test mode unlocks, the worker checks in on their phone with World, so a real person took the test, not a stand-in.
 

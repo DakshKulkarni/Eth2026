@@ -1,4 +1,4 @@
-# MR Machine Trainer: project status
+# Smartician: project status
 
 Last updated: 2026-11-06. This file describes what exists in the repository and what has been verified live. Where something is built but not proven, it says so.
 

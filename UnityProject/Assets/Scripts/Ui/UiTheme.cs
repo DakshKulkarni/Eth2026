@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MrTrainer.Ui
 {
-    [CreateAssetMenu(menuName = "MR Trainer/Ui Theme", fileName = "UiTheme")]
+    [CreateAssetMenu(menuName = "Smartician/Ui Theme", fileName = "UiTheme")]
     public class UiTheme : ScriptableObject
     {
         public Color panel = new Color(0.0588f, 0.0667f, 0.0824f, 0.94f);

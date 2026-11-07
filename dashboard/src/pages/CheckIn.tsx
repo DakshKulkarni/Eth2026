@@ -176,7 +176,7 @@ export function CheckIn() {
               <svg viewBox="0 0 32 32" className="size-6" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="square"><path d="M7 24V8l9 8 9-8v16" /></svg>
             </div>
             <div>
-              <p className="text-[15px] font-semibold">Proof Deck</p>
+              <p className="text-[15px] font-semibold">Smartician</p>
               <p className="display mt-1 text-[22px] font-semibold">Operator check-in</p>
             </div>
           </div>

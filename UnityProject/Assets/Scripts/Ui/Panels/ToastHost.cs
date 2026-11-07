@@ -42,14 +42,16 @@ namespace MrTrainer.Ui
             Bounds b = rs[0].bounds;
             for (int i = 1; i < rs.Length; i++) b.Encapsulate(rs[i].bounds);
             var go = Spawn(transform, message, ui.T.danger, 2.5f);
-            go.transform.position = new Vector3(b.center.x, b.max.y + 0.14f, b.center.z);
+            // Held up and pulled towards the trainee so the machine itself never hides the message.
+            Vector3 spot = new Vector3(b.center.x, b.max.y + 0.14f, b.center.z);
+            go.transform.position = Vector3.MoveTowards(spot, head.position, 0.4f);
             go.AddComponent<Billboard>().head = head;
         }
 
         public void Hud(string message, Color color)
         {
             var go = Spawn(hud, message, color, 3f);
-            go.transform.localPosition = new Vector3(0f, 0.36f, 0f);
+            go.transform.localPosition = new Vector3(0f, 0.47f, 0f);
             go.transform.localRotation = Quaternion.identity;
         }
 

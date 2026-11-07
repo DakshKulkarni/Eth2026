@@ -90,7 +90,7 @@ namespace MrTrainer.Guidance
             {
                 var chosen = s;
                 spec.bullets.Add(s.title + ": " + s.subtitle);
-                spec.buttons.Add(new ModalButton { label = s.title, color = s == scenario ? ui.T.accent : ui.T.border, click = () => ChangeScenario(chosen.id) });
+                spec.buttons.Add(new ModalButton { label = s.title, color = ui.T.accent, click = () => ChangeScenario(chosen.id) });
             }
             modal.Show(spec);
         }
@@ -127,7 +127,7 @@ namespace MrTrainer.Guidance
 
             var spec = new ModalSpec
             {
-                title = "MR Machine Trainer",
+                title = "Smartician",
                 chip = "WELCOME",
                 accent = ui.T.accent,
                 body = "Learn mode highlights each control and explains why. Test mode removes the hints.",

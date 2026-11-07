@@ -18,6 +18,9 @@ namespace MrTrainer.Machine
         const float ModelYaw = 180f;
         const float BenchTop = 0.78f;
 
+        // The control panel stands on the bench to one side of the drill.
+        const float PanelX = -0.7f;
+
         // The model's own measurements (metres, before scaling): the bit axis and the heights of its parts.
         const float AxisZ = 0.11f;
         const float ChuckBottom = 0.31f;
@@ -57,7 +60,7 @@ namespace MrTrainer.Machine
             placer.machineRoot = root.transform;
             placer.rig = rig;
             placer.distance = 1.45f;
-            placer.focusLocal = new Vector3(0f, 0f, 0.2f);
+            placer.focusLocal = new Vector3(PanelX * 0.45f, 0f, 0.15f);
 
             root.SetActive(false);
             return new Scenario
@@ -104,9 +107,9 @@ namespace MrTrainer.Machine
 
         static void BuildBench(Transform root)
         {
-            Prim(PrimitiveType.Cube, "Bench", root, new Vector3(0f, BenchTop * 0.5f, 0.1f), new Vector3(1.05f, BenchTop, 1.2f),
+            Prim(PrimitiveType.Cube, "Bench", root, new Vector3(PanelX * 0.5f, BenchTop * 0.5f, 0.1f), new Vector3(1.9f, BenchTop, 1.0f),
                 new Color(0.42f, 0.34f, 0.26f), 0.2f);
-            Prim(PrimitiveType.Cube, "BenchTop", root, new Vector3(0f, BenchTop - 0.01f, 0.1f), new Vector3(1.08f, 0.03f, 1.23f),
+            Prim(PrimitiveType.Cube, "BenchTop", root, new Vector3(PanelX * 0.5f, BenchTop - 0.01f, 0.1f), new Vector3(1.93f, 0.03f, 1.03f),
                 new Color(0.55f, 0.45f, 0.34f), 0.25f);
         }
 
@@ -227,11 +230,12 @@ namespace MrTrainer.Machine
         {
             var panel = new GameObject("ControlPanel").transform;
             panel.SetParent(root, false);
-            panel.localPosition = new Vector3(0f, BenchTop + 0.22f, 0.66f);
-            panel.localRotation = Quaternion.Euler(-18f, 0f, 0f);
+            // Beside the drill, angled in towards the trainee, like the CNC's side panel.
+            panel.localPosition = new Vector3(PanelX, BenchTop + 0.23f, 0.12f);
+            panel.localRotation = Quaternion.Euler(-15f, 28f, 0f);
             Prim(PrimitiveType.Cube, "Body", panel, Vector3.zero, new Vector3(0.68f, 0.44f, 0.05f), PanelColor, 0.3f);
 
-            const float z = -0.03f;   // in front of the panel face, towards the trainee
+            const float z = 0.03f;   // in front of the panel face: the trainee stands on the +z side
             float row1 = 0.06f, row2 = -0.07f;
 
             Isolator(panel, ui, view, controls, new Vector3(-0.21f, row1, z));
@@ -271,7 +275,7 @@ namespace MrTrainer.Machine
             knob.SetParent(c.transform, false);
             Prim(PrimitiveType.Cylinder, "Disc", knob, Vector3.zero, new Vector3(0.07f, 0.008f, 0.07f), new Color(0.08f, 0.08f, 0.09f), 0.5f)
                 .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            Prim(PrimitiveType.Cube, "Handle", knob, new Vector3(0f, 0.012f, -0.012f), new Vector3(0.016f, 0.07f, 0.014f), new Color(0.9f, 0.2f, 0.18f), 0.3f);
+            Prim(PrimitiveType.Cube, "Handle", knob, new Vector3(0f, 0.012f, 0.012f), new Vector3(0.016f, 0.07f, 0.014f), new Color(0.9f, 0.2f, 0.18f), 0.3f);
             AddVisual(c, VisualMode.Rotary, knob, Vector3.zero, null, new[] { "off", "on" }, -45f, 90f);
             Label(panel, ui, "Main switch", pos);
             controls.Add(c);
@@ -280,12 +284,12 @@ namespace MrTrainer.Machine
         static void Estop(Transform panel, UiFactory ui, DrillView view, List<MachineControl> controls, Vector3 pos)
         {
             var c = NewControl(panel, ControlIds.Estop, "E-STOP", ControlKind.Toggle, new[] { "released", "engaged" }, pos, new Vector3(0.09f, 0.09f, 0.05f));
-            Prim(PrimitiveType.Cylinder, "Ring", c.transform, new Vector3(0f, 0f, 0.004f), new Vector3(0.085f, 0.004f, 0.085f), Yellow, 0.3f)
+            Prim(PrimitiveType.Cylinder, "Ring", c.transform, new Vector3(0f, 0f, -0.004f), new Vector3(0.085f, 0.004f, 0.085f), Yellow, 0.3f)
                 .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var button = Prim(PrimitiveType.Cylinder, "Button", c.transform, new Vector3(0f, 0f, -0.01f), new Vector3(0.065f, 0.012f, 0.065f),
+            var button = Prim(PrimitiveType.Cylinder, "Button", c.transform, new Vector3(0f, 0f, 0.01f), new Vector3(0.065f, 0.012f, 0.065f),
                 new Color(0.85f, 0.1f, 0.1f), 0.6f);
             button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            AddVisual(c, VisualMode.Latch, button.transform, new Vector3(0f, 0f, 0.012f), "engaged", null);
+            AddVisual(c, VisualMode.Latch, button.transform, new Vector3(0f, 0f, -0.012f), "engaged", null);
             Label(panel, ui, "E-STOP", pos);
             controls.Add(c);
         }
@@ -294,9 +298,9 @@ namespace MrTrainer.Machine
             Vector3 pos, Color baseColor, Color glow)
         {
             var c = NewControl(panel, id, label, ControlKind.Toggle, new[] { "off", "on" }, pos, new Vector3(0.08f, 0.08f, 0.05f));
-            var button = Prim(PrimitiveType.Cylinder, "Button", c.transform, new Vector3(0f, 0f, -0.008f), new Vector3(0.055f, 0.012f, 0.055f), baseColor, 0.6f);
+            var button = Prim(PrimitiveType.Cylinder, "Button", c.transform, new Vector3(0f, 0f, 0.008f), new Vector3(0.055f, 0.012f, 0.055f), baseColor, 0.6f);
             button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var visual = AddVisual(c, VisualMode.Latch, button.transform, new Vector3(0f, 0f, 0.008f), "on", null);
+            var visual = AddVisual(c, VisualMode.Latch, button.transform, new Vector3(0f, 0f, -0.008f), "on", null);
             visual.lamp = button.GetComponent<Renderer>();
             visual.lampValue = "on";
             visual.lampBase = baseColor;
@@ -313,7 +317,7 @@ namespace MrTrainer.Machine
             knob.SetParent(c.transform, false);
             Prim(PrimitiveType.Cylinder, "Disc", knob, Vector3.zero, new Vector3(0.07f, 0.012f, 0.07f), new Color(0.07f, 0.07f, 0.08f), 0.5f)
                 .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            Prim(PrimitiveType.Cube, "Pointer", knob, new Vector3(0f, 0.022f, -0.009f), new Vector3(0.01f, 0.03f, 0.008f), Yellow, 0.3f);
+            Prim(PrimitiveType.Cube, "Pointer", knob, new Vector3(0f, 0.022f, 0.009f), new Vector3(0.01f, 0.03f, 0.008f), Yellow, 0.3f);
             AddVisual(c, VisualMode.Rotary, knob, Vector3.zero, null, values, 60f, -60f);
             Label(panel, ui, label, pos);
 
