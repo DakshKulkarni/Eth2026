@@ -41,6 +41,7 @@ export interface Session {
   human: VerifiedHuman | null;
   certificate: Certificate | null;
   id: string;
+  procedureId: string;
   startedAt: string;
   lastSeq: number;
   busy: boolean;
@@ -52,9 +53,10 @@ export interface Session {
 
 const sessions = new Map<string, Session>();
 
-export function createSession(): Session {
+export function createSession(procedureId: string): Session {
   const session: Session = {
     id: randomUUID(),
+    procedureId,
     startedAt: new Date().toISOString(),
     lastSeq: 0,
     busy: false,

@@ -25,6 +25,7 @@ export interface IssueInput {
   outcome: string;
   displayName?: string;
   human?: string;
+  machineName?: string;
 }
 
 export interface IssueResult {
@@ -81,7 +82,7 @@ async function writeProfile(resolver: ethers.Contract, name: string, input: Issu
   try {
     const values: Record<(typeof PROFILE_TEXT_KEYS)[number], string> = {
       alias: input.displayName ?? '',
-      description: 'Certified operator of the cnc-01 vertical machining center. Passed the unaided Test run, judged by the 0G AI technician.',
+      description: `Certified operator of the ${input.machineName ?? 'cnc-01 vertical machining center'}. Passed the unaided Test run, judged by the 0G AI technician.`,
       class: 'Certificate',
     };
     const calls = PROFILE_TEXT_KEYS.filter((key) => values[key].length > 0).map((key) =>

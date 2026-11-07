@@ -228,6 +228,7 @@ export interface EpisodeView {
   verified: boolean;
   reason: string | null;
   sessionId: string | null;
+  procedureId: string | null;
   model: string | null;
   outcome: string | null;
   startedAt: string | null;
@@ -266,7 +267,7 @@ export async function episodeView(rootHash: string): Promise<EpisodeView> {
   if (hit) return hit;
   const result = await downloadBundle(rootHash);
   if (!result.ok) {
-    return { rootHash, verified: false, reason: result.reason, sessionId: null, model: null, outcome: null, startedAt: null, endedAt: null, headHash: null, counts: {}, events: [] };
+    return { rootHash, verified: false, reason: result.reason, sessionId: null, procedureId: null, model: null, outcome: null, startedAt: null, endedAt: null, headHash: null, counts: {}, events: [] };
   }
   const b = result.bundle;
   const counts: Record<string, number> = {};
@@ -276,6 +277,7 @@ export async function episodeView(rootHash: string): Promise<EpisodeView> {
     verified: true,
     reason: null,
     sessionId: b.sessionId,
+    procedureId: b.procedureId,
     model: b.coachModel,
     outcome: b.outcome,
     startedAt: b.startedAt,

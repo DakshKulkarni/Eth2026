@@ -11,6 +11,7 @@ namespace MrTrainer.Ui
         public event Action RecenterClicked;
         public event Action RestartClicked;
         public event Action SwitchClicked;
+        public event Action MachineClicked;
 
         UiFactory ui;
         UiChip modeChip;
@@ -66,14 +67,14 @@ namespace MrTrainer.Ui
         void BuildHeader(Transform root, HeadFollow follow, Color neutral)
         {
             const float y = 338f;
-            ui.Button(root, "Follow me", new Vector2(190f, 56f), new Vector2(-290f, y), neutral, () => follow.Unpin());
+            ui.Button(root, "Follow me", new Vector2(150f, 56f), new Vector2(-265f, y), neutral, () => follow.Unpin());
 
-            var grip = ui.Rect(root, "Grip", new Vector2(300f, 56f), new Vector2(0f, y));
+            var grip = ui.Rect(root, "Grip", new Vector2(200f, 56f), new Vector2(-80f, y));
             var gripBg = ui.Fill(grip, neutral);
             var col = grip.gameObject.AddComponent<BoxCollider>();
-            col.size = new Vector3(300f, 56f, 30f);
+            col.size = new Vector3(200f, 56f, 30f);
             var gripText = ui.Text(grip, "Hold to move", ui.T.caption - 2f, ui.T.textSecondary, true,
-                TextAlignmentOptions.Center, new Vector2(280f, 56f), Vector2.zero);
+                TextAlignmentOptions.Center, new Vector2(180f, 56f), Vector2.zero);
             gripText.textWrappingMode = TextWrappingModes.NoWrap;
             gripText.enableAutoSizing = true;
             gripText.fontSizeMin = 20f;
@@ -81,8 +82,11 @@ namespace MrTrainer.Ui
             var handle = grip.gameObject.AddComponent<UiDragHandle>();
             handle.Setup(transform, follow, gripBg, gripText, neutral, ui.T.border);
 
+            ui.Button(root, "Machine", new Vector2(150f, 56f), new Vector2(105f, y), neutral,
+                () => { if (MachineClicked != null) MachineClicked(); });
+
             UiButton fold = null;
-            fold = ui.Button(root, "Hide card", new Vector2(190f, 56f), new Vector2(290f, y), neutral, () =>
+            fold = ui.Button(root, "Hide card", new Vector2(150f, 56f), new Vector2(265f, y), neutral, () =>
             {
                 bool open = !content.gameObject.activeSelf;
                 content.gameObject.SetActive(open);
@@ -118,6 +122,18 @@ namespace MrTrainer.Ui
             progress.Set(r.TotalDone / (float)r.TotalSteps, test ? ui.T.warning : ui.T.accent);
             hintButton.gameObject.SetActive(test);
             switchButton.SetLabel(test ? "Learn mode" : "Test mode");
+            Reveal();
+        }
+
+        // Shown between simulations, before a mode is chosen.
+        public void ShowIdle(string machineName)
+        {
+            modeChip.Set("READY", ui.T.accent);
+            stageText.text = machineName;
+            instruction.text = "Choose Learn or Test mode to begin.";
+            why.text = "Learn highlights each control. Test removes the hints.";
+            progress.Set(0f, ui.T.accent);
+            hintButton.gameObject.SetActive(false);
             Reveal();
         }
 

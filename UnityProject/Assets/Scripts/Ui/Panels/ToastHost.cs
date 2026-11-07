@@ -21,6 +21,13 @@ namespace MrTrainer.Ui
             machine.Blocked += OnBlocked;
         }
 
+        public void SetMachine(MachineController controller)
+        {
+            if (machine != null) machine.Blocked -= OnBlocked;
+            machine = controller;
+            machine.Blocked += OnBlocked;
+        }
+
         void OnDestroy()
         {
             if (machine != null) machine.Blocked -= OnBlocked;

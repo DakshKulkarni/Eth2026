@@ -17,5 +17,14 @@ namespace MrTrainer.Machine
         public const string Coolant = "coolant_btn";
         public const string CycleStart = "cycle_start";
         public const string CycleStop = "cycle_stop";
+
+        // Benchtop drill press
+        public const string Guard = "guard";
+        public const string Bit = "bit_select";
+        public const string Speed = "speed_select";
+        public const string Depth = "depth_select";
+        public const string Oil = "oil_btn";
+        public const string Spindle = "spindle_btn";
+        public const string FeedLever = "feed_lever";
     }
 }

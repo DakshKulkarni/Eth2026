@@ -14,9 +14,36 @@ function Lamp({ on, danger, label, value }: { on: boolean; danger?: boolean; lab
   );
 }
 
+const NAMES: Record<string, string> = {
+  isolator: 'Main switch', estop: 'E-stop', workpiece: 'Part', clamp_handle: 'Clamp', guard: 'Guard', bit_select: 'Drill bit',
+  speed_select: 'Speed', depth_select: 'Depth stop', oil_btn: 'Cutting oil', spindle_btn: 'Motor', hole: 'Hole',
+};
+const DANGER = new Set(['estop', 'guard']);
+const ACTIVE: Record<string, string[]> = { isolator: ['on'], estop: ['engaged'], workpiece: ['placed'], clamp_handle: ['clamped'], guard: ['open'], oil_btn: ['on'], spindle_btn: ['on'] };
+
+// Any machine that reports its controls by id, such as the drill press.
+function GenericTwin({ m }: { m: Record<string, unknown> }) {
+  const running = s(m.cycle) === 'running';
+  const keys = Object.keys(m).filter((k) => k !== 'cycle');
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between bg-panel-2 px-4 py-3" style={{ borderRadius: 12 }}>
+        <span className="label">Drilling</span>
+        <span className={cn('display text-[22px] font-semibold', running ? 'text-accent' : 'text-muted')}>{running ? 'Running' : 'Idle'}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {keys.map((k) => (
+          <Lamp key={k} on={(ACTIVE[k] ?? []).includes(s(m[k]))} danger={DANGER.has(k)} label={NAMES[k] ?? k} value={s(m[k]).toUpperCase()} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // The machine as the headset sees it: a control panel whose lamps follow the recorded state.
 export function MachineTwin({ machine }: { machine: Machine }) {
   const m = (machine ?? {}) as Record<string, unknown>;
+  if (machine && !('door' in m) && !('homed' in m)) return <GenericTwin m={m} />;
   const homed = (m.homed ?? {}) as Record<string, boolean>;
   const mode = s(m.mode);
   const running = s(m.cycle) === 'running';

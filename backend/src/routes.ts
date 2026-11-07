@@ -14,12 +14,17 @@ import { uploadBundle } from './episode/storage.js';
 import { coach } from './judge/coach.js';
 import { observeSchema } from './judge/schema.js';
 import { createSession, getSession } from './session.js';
-import { loadProcedure } from './shared/procedure.js';
+import { DEFAULT_PROCEDURE, getProcedure, type Procedure } from './shared/procedure.js';
 import { speak } from './zerog/speech.js';
 import { cancelCheckin, claimCheckin, createCheckin, expireIfDue, getCheckin, publicView, readyCheckin, setName } from './world/checkins.js';
 import { worldConfigured } from './world/oidc.js';
 
-const procedure = loadProcedure();
+const startSchema = z.object({ procedureId: z.string().max(40).optional() });
+
+function procedureOf(session: { procedureId: string }): Procedure {
+  return (getProcedure(session.procedureId) ?? getProcedure(DEFAULT_PROCEDURE)) as Procedure;
+}
+
 const ttsSchema = z.object({ text: z.string().min(1).max(400), sessionId: z.string().optional() });
 const finalizeSchema = z.object({ outcome: z.enum(OUTCOMES) });
 const certificateSchema = z.object({
@@ -64,14 +69,18 @@ export function registerRoutes(app: FastifyInstance): void {
     return reply.type(result.contentType).send(result.audio);
   });
 
-  app.post('/session/start', async () => {
-    const session = createSession();
+  app.post('/session/start', async (req, reply) => {
+    const wanted = startSchema.safeParse(req.body ?? {});
+    if (!wanted.success) return reply.code(400).send({ error: 'invalid_request' });
+    const procedure = getProcedure(wanted.data.procedureId ?? DEFAULT_PROCEDURE);
+    if (!procedure) return reply.code(404).send({ error: 'unknown_procedure' });
+    const session = createSession(procedure.id);
     session.log.append('session_start', {
       procedureId: procedure.id,
       procedureVersion: procedure.version,
       coachModel: config.ZG_COACH_MODEL,
     });
-    activity('session_start', { session: session.id.slice(0, 8) });
+    activity('session_start', { session: session.id.slice(0, 8), procedure: procedure.id, machine: procedure.machine.name });
     return { sessionId: session.id, procedure, model: config.ZG_COACH_MODEL };
   });
 
@@ -86,7 +95,7 @@ export function registerRoutes(app: FastifyInstance): void {
     if (session.busy) return reply.code(409).send({ error: 'busy' });
     session.busy = true;
     try {
-      const result = await coach(session, procedure, body.data);
+      const result = await coach(session, procedureOf(session), body.data);
       session.log.append('observe', {
         trigger: body.data.trigger,
         checkpointId: body.data.checkpointId ?? null,
@@ -243,6 +252,7 @@ export function registerRoutes(app: FastifyInstance): void {
         evidenceRoot: session.finalized.rootHash,
         outcome: session.finalized.outcome,
         displayName: displayName(certName),
+        machineName: `${procedureOf(session).machine.label} ${procedureOf(session).machine.name}`,
         human: session.human ? `world:${new URL(config.WORLD_ISSUER).hostname.startsWith('sandbox') ? 'sandbox' : 'production'}:${session.human.humanHash.slice(0, 12)}:${session.human.acr ?? 'none'}` : undefined,
       });
     } catch (err) {
@@ -284,6 +294,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const body = finalizeSchema.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
 
+    const procedure = procedureOf(session);
     session.log.append('session_end', { outcome: body.data.outcome });
     const records = session.log.all;
     const bundle = buildBundle({

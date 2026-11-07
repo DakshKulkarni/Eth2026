@@ -1,6 +1,7 @@
 {
   "id": "cnc-vmc",
   "name": "CNC Vertical Machining Center: start-up, set-up and run",
+  "machine": { "name": "CNC vertical machining center", "label": "cnc-01" },
   "version": "1.0.0",
   "hintLimit": 3,
   "stages": [

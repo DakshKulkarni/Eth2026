@@ -20,16 +20,32 @@ namespace MrTrainer.Machine
         readonly Dictionary<string, MachineControl> byId = new Dictionary<string, MachineControl>();
         MachineState initial;
 
-        void Awake()
+        protected virtual void Awake()
         {
             State = new MachineState();
+            InitState(State);
             initial = State.Clone();
-            simulator.Init(State, this);
-            foreach (var c in controls)
+            if (simulator != null) simulator.Init(State, this);
+            if (controls != null) Register(controls);
+        }
+
+        // Machines built in code create their controls after Awake and hand them over here.
+        public void Register(MachineControl[] list)
+        {
+            controls = list;
+            byId.Clear();
+            foreach (var c in list)
             {
                 byId[c.controlId] = c;
                 c.Init(this);
             }
+        }
+
+        protected virtual void InitState(MachineState s) { }
+
+        public virtual bool Busy
+        {
+            get { return State.Running || (simulator != null && simulator.Homing); }
         }
 
         public MachineControl GetControl(string id)
@@ -50,7 +66,7 @@ namespace MrTrainer.Machine
 
         public void Restore(MachineState snap)
         {
-            simulator.Cancel();
+            if (simulator != null) simulator.Cancel();
             State.CopyFrom(snap);
             State.Raise();
         }
@@ -80,7 +96,7 @@ namespace MrTrainer.Machine
             if (CycleFinished != null) CycleFinished(kind);
         }
 
-        static bool IsPress(string id)
+        protected virtual bool IsPress(string id)
         {
             return id == ControlIds.HomeZ || id == ControlIds.HomeXY ||
                    id == ControlIds.CycleStart || id == ControlIds.CycleStop;
@@ -92,7 +108,7 @@ namespace MrTrainer.Machine
             Accepted(new ActionRecord { t = Time.time, control = control, action = action, value = value ?? "" });
         }
 
-        string Check(string id, string value)
+        protected virtual string Check(string id, string value)
         {
             var s = State;
             switch (id)
@@ -148,7 +164,7 @@ namespace MrTrainer.Machine
             }
         }
 
-        void Apply(string id, string value)
+        protected virtual void Apply(string id, string value)
         {
             var s = State;
             switch (id)

@@ -68,8 +68,8 @@ function Detail({ e }: { e: EpisodeEvent }) {
 }
 
 export function EpisodeReplay({ root }: { root: string | null }) {
-  const procedure = useProcedure();
   const q = useQuery({ queryKey: ['episode', root], queryFn: () => api.episode(root!), enabled: Boolean(root), staleTime: Infinity });
+  const procedure = useProcedure(q.data?.procedureId);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(4);

@@ -25,6 +25,8 @@ namespace MrTrainer.Guidance
         CoachService coach;
         CoachBanner banner;
         ApiClient api;
+        ScenarioHub hub;
+        Scenario scenario;
 
         readonly ActionRecorder recorder = new ActionRecorder();
         ProcedureRunner runner;
@@ -35,8 +37,10 @@ namespace MrTrainer.Guidance
         public void Init(Procedure proc, MachineController controller, HighlightService highlighter, StepCardPanel stepCard,
             ModalPanel modalPanel, ToastHost toastHost, MachinePlacer machinePlacer, ICheckpointService service,
             UiFactory factory, Transform headTransform, CoachService coachService, CoachBanner coachBanner,
-            ApiClient apiClient)
+            ApiClient apiClient, ScenarioHub scenarioHub)
         {
+            hub = scenarioHub;
+            scenario = hub.Active;
             api = apiClient;
             coach = coachService;
             banner = coachBanner;
@@ -57,7 +61,8 @@ namespace MrTrainer.Guidance
 
             machine.Accepted += OnAction;
             card.HintClicked += OnHint;
-            card.RecenterClicked += placer.Recenter;
+            card.RecenterClicked += () => placer.Recenter();
+            card.MachineClicked += ShowChooser;
             card.RestartClicked += () => { if (runner != null) Begin(runner.Mode); };
             card.SwitchClicked += () =>
             {
@@ -67,13 +72,58 @@ namespace MrTrainer.Guidance
 
         public void ShowWelcome()
         {
+            if (hub.All.Count > 1) ShowChooser();
+            else StartCoroutine(Welcome());
+        }
+
+        // Pick which machine to train on. Each one has its own procedure, and the proof trail works the same.
+        void ShowChooser()
+        {
+            var spec = new ModalSpec
+            {
+                title = "Choose a machine",
+                chip = "SIMULATION",
+                accent = ui.T.accent,
+                body = "Two machines, one AI technician. Every Test is judged on 0G and leaves the same proof."
+            };
+            foreach (var s in hub.All)
+            {
+                var chosen = s;
+                spec.bullets.Add(s.title + ": " + s.subtitle);
+                spec.buttons.Add(new ModalButton { label = s.title, color = s == scenario ? ui.T.accent : ui.T.border, click = () => ChangeScenario(chosen.id) });
+            }
+            modal.Show(spec);
+        }
+
+        void ChangeScenario(string id)
+        {
+            modal.Hide();
+            highlight.Clear();
+            banner.Hide();
+            coach.StopSession();
+            runner = null;
+            offlineShown = false;
+
+            var next = hub.Activate(id);
+            machine.Accepted -= OnAction;
+            scenario = next;
+            procedure = next.procedure;
+            machine = next.machine;
+            placer = next.placer;
+            machine.Accepted += OnAction;
+            highlight.SetMachine(machine);
+            toasts.SetMachine(machine);
+            coach.SetMachine(machine);
+            coach.procedureId = procedure.id;
+            machine.ResetMachine();
+            card.ShowIdle(next.machineName);
             StartCoroutine(Welcome());
         }
 
         IEnumerator Welcome()
         {
             ApiResult<PassportResponse> passport = null;
-            yield return api.Passport(Config.MachineLabel, r => passport = r);
+            if (scenario.passportLabel != null) yield return api.Passport(scenario.passportLabel, r => passport = r);
 
             var spec = new ModalSpec
             {
@@ -87,7 +137,12 @@ namespace MrTrainer.Guidance
                     new ModalButton { label = "Test mode", color = ui.T.warning, click = () => Begin(TrainingMode.Test) }
                 }
             };
-            if (passport.Ok && passport.value.registered)
+            if (passport == null)
+            {
+                spec.title = scenario.machineName;
+                foreach (var tip in scenario.tips) spec.bullets.Add(tip);
+            }
+            else if (passport.Ok && passport.value.registered)
             {
                 var p = passport.value;
                 spec.bullets.Add("Machine passport from ENS: " + p.name);
@@ -335,7 +390,7 @@ namespace MrTrainer.Guidance
 
         IEnumerator RunJudge(StepDef step)
         {
-            yield return new WaitUntil(() => !machine.simulator.Homing && !machine.State.Running);
+            yield return new WaitUntil(() => !machine.Busy);
             yield return StartCoroutine(Judge(new CheckpointContext { step = step }));
         }
 

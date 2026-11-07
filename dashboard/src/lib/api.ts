@@ -57,6 +57,7 @@ export interface EpisodeView {
   verified: boolean;
   reason: string | null;
   sessionId: string | null;
+  procedureId: string | null;
   model: string | null;
   outcome: string | null;
   startedAt: string | null;
@@ -165,7 +166,7 @@ export const api = {
   anchors: () => get<{ contract: string | null; anchors: AnchorRow[] }>('/api/anchors'),
   certificates: () => get<{ certificates: CertificateRow[] }>('/api/certificates'),
   chain: () => get<ChainSummary>('/api/chain'),
-  procedure: () => get<Procedure>('/api/procedure'),
+  procedure: (id?: string | null) => get<Procedure>(id ? `/api/procedure?id=${encodeURIComponent(id)}` : '/api/procedure'),
   live: () => get<LiveStatus>('/api/live'),
   workerReady: async (): Promise<WorkerReady> => {
     const r = (await (await fetch('/worker/ready')).json()) as WorkerReady & { checkinId?: string };

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MrTrainer.Core;
 
 namespace MrTrainer.Machine
@@ -29,6 +30,10 @@ namespace MrTrainer.Machine
         public string alarm = "";
         public float alarmTime = -100f;
 
+        // Machines other than the CNC keep their own controls here, by control id.
+        public bool generic;
+        public Dictionary<string, string> extra = new Dictionary<string, string>();
+
         public event Action Changed;
 
         public bool Running { get { return cycle == "running"; } }
@@ -57,7 +62,9 @@ namespace MrTrainer.Machine
                 case ControlIds.HomeZ: return homedZ ? "homed" : "";
                 case ControlIds.HomeXY: return homedX && homedY ? "homed" : "";
                 case ControlIds.CycleStart: return Running ? "running" : "";
-                default: return "";
+                default:
+                    string v;
+                    return extra.TryGetValue(control, out v) ? v : "";
             }
         }
 
@@ -76,6 +83,7 @@ namespace MrTrainer.Machine
                 case ControlIds.Clamp: clamped = value == "clamped"; break;
                 case ControlIds.Feed: feed = int.Parse(value); break;
                 case ControlIds.Coolant: coolant = value == "on"; break;
+                default: extra[control] = value; break;
             }
         }
 
@@ -87,6 +95,8 @@ namespace MrTrainer.Machine
             homedX = o.homedX; homedY = o.homedY; homedZ = o.homedZ;
             cycle = o.cycle; cycleKind = o.cycleKind; cycleT = o.cycleT; cycleCount = o.cycleCount;
             axisX = o.axisX; axisY = o.axisY; axisZ = o.axisZ;
+            generic = o.generic;
+            extra = new Dictionary<string, string>(o.extra);
             alarm = ""; alarmTime = -100f;
         }
 
@@ -95,6 +105,22 @@ namespace MrTrainer.Machine
             var c = new MachineState();
             c.CopyFrom(this);
             return c;
+        }
+
+        // What the AI technician is shown: the CNC's fixed fields, or each control of another machine by id.
+        public object Observation()
+        {
+            if (!generic) return ToDto();
+            var o = new Dictionary<string, object>
+            {
+                { ControlIds.Isolator, isolator },
+                { ControlIds.Estop, estop },
+                { ControlIds.Workpiece, workpiece },
+                { ControlIds.Clamp, clamped ? "clamped" : "released" },
+                { "cycle", cycle }
+            };
+            foreach (var kv in extra) o[kv.Key] = kv.Value;
+            return o;
         }
 
         public MachineDto ToDto()

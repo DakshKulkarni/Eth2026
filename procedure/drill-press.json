@@ -1,0 +1,251 @@
+{
+  "id": "drill-press",
+  "name": "Benchtop drill press: set up and drill a 13 mm hole",
+  "machine": {
+    "name": "benchtop drill press",
+    "label": "drill-01"
+  },
+  "version": "1.0.0",
+  "hintLimit": 3,
+  "stages": [
+    {
+      "id": 1,
+      "title": "Power and tool set-up"
+    },
+    {
+      "id": 2,
+      "title": "Secure the part"
+    },
+    {
+      "id": 3,
+      "title": "Drill and shut down"
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1_isolator",
+      "stage": 1,
+      "title": "Main switch ON",
+      "spokenInstruction": "Turn the main switch to ON.",
+      "rationale": "The main switch connects the drill to mains power. Nothing runs without it.",
+      "targetControl": "isolator",
+      "expectedAction": {
+        "control": "isolator",
+        "action": "set",
+        "value": "on"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s1_estop",
+      "stage": 1,
+      "title": "Release E-STOP",
+      "spokenInstruction": "Release the red emergency stop button.",
+      "rationale": "The motor cannot start while the emergency stop is pressed in.",
+      "targetControl": "estop",
+      "expectedAction": {
+        "control": "estop",
+        "action": "set",
+        "value": "released"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s1_bit",
+      "stage": 1,
+      "title": "Select the 13 mm bit",
+      "spokenInstruction": "Select the 13 millimetre drill bit.",
+      "rationale": "The job needs a 13 mm hole, so the bit must match.",
+      "targetControl": "bit_select",
+      "expectedAction": {
+        "control": "bit_select",
+        "action": "set",
+        "value": "13mm"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s1_speed",
+      "stage": 1,
+      "title": "Set speed to LOW",
+      "spokenInstruction": "Set the spindle speed to LOW.",
+      "rationale": "A large bit must turn slowly. Too fast overheats the bit and can ruin the part.",
+      "targetControl": "speed_select",
+      "expectedAction": {
+        "control": "speed_select",
+        "action": "set",
+        "value": "LOW"
+      },
+      "checkpoint": true,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s1_bit"
+      ]
+    },
+    {
+      "id": "s2_place",
+      "stage": 2,
+      "title": "Place the part",
+      "spokenInstruction": "Place the aluminium plate on the table.",
+      "rationale": "The plate sits flat on the table under the bit.",
+      "targetControl": "workpiece",
+      "expectedAction": {
+        "control": "workpiece",
+        "action": "set",
+        "value": "placed"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s2_clamp",
+      "stage": 2,
+      "title": "Clamp the part",
+      "spokenInstruction": "Close the clamp to lock the plate.",
+      "rationale": "A loose plate can spin with the bit and cause injury. Never hold it by hand.",
+      "targetControl": "clamp_handle",
+      "expectedAction": {
+        "control": "clamp_handle",
+        "action": "set",
+        "value": "clamped"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s2_place"
+      ]
+    },
+    {
+      "id": "s2_depth",
+      "stage": 2,
+      "title": "Set depth stop to 20 mm",
+      "spokenInstruction": "Set the depth stop to 20 millimetres.",
+      "rationale": "The plate is 25 mm thick. A 20 mm stop drills a blind hole and keeps the bit away from the table.",
+      "targetControl": "depth_select",
+      "expectedAction": {
+        "control": "depth_select",
+        "action": "set",
+        "value": "20mm"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s2_guard",
+      "stage": 2,
+      "title": "Lower the safety guard",
+      "spokenInstruction": "Lower the safety guard.",
+      "rationale": "The guard stops chips and keeps hands and hair away from the spinning bit.",
+      "targetControl": "guard",
+      "expectedAction": {
+        "control": "guard",
+        "action": "set",
+        "value": "closed"
+      },
+      "checkpoint": true,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s2_clamp"
+      ]
+    },
+    {
+      "id": "s3_oil",
+      "stage": 3,
+      "title": "Cutting oil ON",
+      "spokenInstruction": "Turn the cutting oil on.",
+      "rationale": "Oil keeps the bit cool and the cut clean.",
+      "targetControl": "oil_btn",
+      "expectedAction": {
+        "control": "oil_btn",
+        "action": "set",
+        "value": "on"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": []
+    },
+    {
+      "id": "s3_spindle",
+      "stage": 3,
+      "title": "Start the motor",
+      "spokenInstruction": "Press the green motor button.",
+      "rationale": "The bit only turns when the motor runs. It needs the guard down and the part clamped first.",
+      "targetControl": "spindle_btn",
+      "expectedAction": {
+        "control": "spindle_btn",
+        "action": "set",
+        "value": "on"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s1_isolator",
+        "s1_estop",
+        "s2_guard"
+      ]
+    },
+    {
+      "id": "s3_drill",
+      "stage": 3,
+      "title": "Drill the hole",
+      "spokenInstruction": "Pull the feed lever down slowly to drill the hole, then let it return.",
+      "rationale": "A steady feed cuts cleanly. The depth stop ends the hole at 20 mm.",
+      "targetControl": "feed_lever",
+      "expectedAction": {
+        "control": "cycle",
+        "action": "complete",
+        "value": "drill"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s3_spindle",
+        "s3_oil"
+      ]
+    },
+    {
+      "id": "s3_stop",
+      "stage": 3,
+      "title": "Stop the motor",
+      "spokenInstruction": "Press the motor button to stop the bit.",
+      "rationale": "Always let the bit stop before you touch anything.",
+      "targetControl": "spindle_btn",
+      "expectedAction": {
+        "control": "spindle_btn",
+        "action": "set",
+        "value": "off"
+      },
+      "checkpoint": false,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s3_drill"
+      ]
+    },
+    {
+      "id": "s3_open",
+      "stage": 3,
+      "title": "Raise the guard",
+      "spokenInstruction": "Raise the safety guard.",
+      "rationale": "Only open the guard once the bit has stopped.",
+      "targetControl": "guard",
+      "expectedAction": {
+        "control": "guard",
+        "action": "set",
+        "value": "open"
+      },
+      "checkpoint": true,
+      "mode": "both",
+      "forbiddenBefore": [
+        "s3_stop"
+      ]
+    }
+  ]
+}

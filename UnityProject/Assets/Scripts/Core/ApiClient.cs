@@ -29,9 +29,9 @@ namespace MrTrainer.Core
             baseUrl = url;
         }
 
-        public IEnumerator StartSession(Action<ApiResult<SessionStartResponse>> done)
+        public IEnumerator StartSession(string procedureId, Action<ApiResult<SessionStartResponse>> done)
         {
-            return Post("/session/start", new { }, done);
+            return Post("/session/start", new { procedureId }, done);
         }
 
         public IEnumerator Observe(string sessionId, ObserveRequest request, Action<ApiResult<Verdict>> done)

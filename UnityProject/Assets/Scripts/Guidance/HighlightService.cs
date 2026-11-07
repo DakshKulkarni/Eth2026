@@ -27,6 +27,12 @@ namespace MrTrainer.Guidance
             Enabled = true;
         }
 
+        public void SetMachine(MachineController controller)
+        {
+            Clear();
+            machine = controller;
+        }
+
         public void SetTarget(string controlId, string label)
         {
             Clear();

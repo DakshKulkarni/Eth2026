@@ -13,6 +13,7 @@ namespace MrTrainer.Guidance
         const float TickSeconds = 12f;
 
         public bool sendFrames = true;
+        public string procedureId = "cnc-vmc";
 
         public event Action<Verdict, string> Correction;
         public event Action AllClear;
@@ -52,6 +53,19 @@ namespace MrTrainer.Guidance
             machine.BlockedDetail += OnBlocked;
         }
 
+        // Another machine took over: listen to it instead.
+        public void SetMachine(MachineController controller)
+        {
+            if (machine != null)
+            {
+                machine.Accepted -= OnAction;
+                machine.BlockedDetail -= OnBlocked;
+            }
+            machine = controller;
+            machine.Accepted += OnAction;
+            machine.BlockedDetail += OnBlocked;
+        }
+
         void OnDestroy()
         {
             if (machine == null) return;
@@ -80,7 +94,7 @@ namespace MrTrainer.Guidance
         {
             active = false;
             ApiResult<SessionStartResponse> result = null;
-            yield return api.StartSession(r => result = r);
+            yield return api.StartSession(procedureId, r => result = r);
             if (!result.Ok)
             {
                 done(false);
@@ -226,7 +240,7 @@ namespace MrTrainer.Guidance
                 trigger = trigger,
                 checkpointId = checkpointId,
                 mode = mode,
-                machine = machine.State.ToDto(),
+                machine = machine.State.Observation(),
                 actions = log.FindAll(a => a.seq > acked)
             };
             int sent = seq;

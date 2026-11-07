@@ -2,7 +2,7 @@ import type { ChatMessage, ContentPart } from '../zerog/client.js';
 import type { Procedure, Step } from '../shared/procedure.js';
 import type { Action, Observe } from './schema.js';
 
-const SYSTEM = `You are the only judge of a trainee who operates a CNC vertical machining center in a mixed-reality simulator. No other system checks the trainee's work: your verdict decides whether they may move on, so judge carefully.
+const system = (machine: string): string => `You are the only judge of a trainee who operates a ${machine} in a mixed-reality simulator. No other system checks the trainee's work: your verdict decides whether they may move on, so judge carefully.
 You get the standard procedure (SOP), the live machine state, every action the trainee has taken so far, the newest actions, and sometimes an image of what they currently see. The JSON state is authoritative; use the image only to confirm it.
 The SOP lists the intended steps in order, each with the reason it matters. Use the reasons to decide which deviations matter. Work out the trainee's progress yourself from the actions and the machine state; nothing else tracks it for you.
 - A harmless change of order (nothing wrong or unsafe results from it) is fine.
@@ -51,7 +51,7 @@ export function buildMessages(req: Observe, facts: PromptFacts): ChatMessage[] {
   const parts: ContentPart[] = [{ type: 'text', text }];
   if (req.frame) parts.push({ type: 'image_url', image_url: { url: req.frame } });
   return [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: system(facts.procedure.machine.name) },
     { role: 'user', content: parts },
   ];
 }

@@ -119,7 +119,7 @@ namespace MrTrainer.Core
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string checkpointId;
         public string mode;
-        public MachineDto machine;
+        public object machine;
         public List<ActionRecord> actions = new List<ActionRecord>();
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string frame;

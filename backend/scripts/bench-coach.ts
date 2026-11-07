@@ -49,7 +49,7 @@ scenarios.push(
 
 console.log(`model: ${config.ZG_COACH_MODEL}`);
 for (const [name, request] of scenarios) {
-  const r = await coach(createSession(), procedure, request);
+  const r = await coach(createSession(procedure.id), procedure, request);
   console.log(`${name.padEnd(36)} -> ${r.verdict.padEnd(9)} ${String(r.latencyMs).padStart(5)} ms  "${r.coachingLine}"`);
   for (const m of r.mistakes) console.log(`      ${m.stepId}: ${m.code} - ${m.explanation}`);
 }

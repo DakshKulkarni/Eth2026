@@ -4,8 +4,9 @@ namespace MrTrainer.Machine
 {
     public class MachinePlacer : MonoBehaviour
     {
-        const float Distance = 2.0f;
-        static readonly Vector3 FocusLocal = new Vector3(-0.5f, 0f, 0.3f);
+        // Where the machine stands in front of the user, and which point of it they face.
+        public float distance = 2.0f;
+        public Vector3 focusLocal = new Vector3(-0.5f, 0f, 0.3f);
 
         public Transform machineRoot;
         public OVRCameraRig rig;
@@ -22,11 +23,11 @@ namespace MrTrainer.Machine
             float eyeHeight = head.position.y - floorY;
             if (eyeHeight < 0.7f || eyeHeight > 2.3f) floorY = head.position.y - 1.6f;
 
-            Vector3 focus = head.position + forward * Distance;
+            Vector3 focus = head.position + forward * distance;
             focus.y = floorY;
             Quaternion rotation = Quaternion.LookRotation(-forward);
             machineRoot.rotation = rotation;
-            machineRoot.position = focus - rotation * FocusLocal;
+            machineRoot.position = focus - rotation * focusLocal;
         }
     }
 }

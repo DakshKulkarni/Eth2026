@@ -3,12 +3,11 @@ import { config } from './config.js';
 import { certificateDetail, chainSummary, episodeView, listAnchors, listCertificates } from './chainview.js';
 import { recent, stats, subscribe, type Track } from './events.js';
 import { LABEL_PATTERN } from './ens/read.js';
-import { loadProcedure } from './shared/procedure.js';
+import { getProcedure, listProcedures } from './shared/procedure.js';
 import { worldConfigured } from './world/oidc.js';
 
 const TRACKS = new Set<Track>(['0g', 'ens', 'world', 'system']);
 const startedAt = Date.now();
-const procedure = loadProcedure();
 
 export function registerApi(app: FastifyInstance): void {
   // The last events, newest last. Optional ?track=0g|ens|world and ?limit=.
@@ -43,7 +42,8 @@ export function registerApi(app: FastifyInstance): void {
     });
   });
 
-  app.get('/api/procedure', async () => procedure);
+  app.get<{ Querystring: { id?: string } }>('/api/procedure', async (req, reply) => getProcedure(req.query.id) ?? reply.code(404).send({ error: 'unknown_procedure' }));
+  app.get('/api/procedures', async () => listProcedures().map((p) => ({ id: p.id, name: p.name, machine: p.machine, steps: p.steps.length, stages: p.stages.length })));
   app.get('/api/chain', async () => chainSummary());
 
   app.get('/api/anchors', async (_req, reply) => {

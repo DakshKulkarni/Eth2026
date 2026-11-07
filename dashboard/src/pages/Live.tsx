@@ -28,8 +28,8 @@ function NoSignal() {
 
 export function Live() {
   const stream = useEventStream();
-  const procedure = useProcedure();
   const session = useLiveSession(stream.events);
+  const procedure = useProcedure(session.procedure);
   const status = useQuery({ queryKey: ['live-status'], queryFn: api.live, refetchInterval: 1500 });
   const wrap = useRef<HTMLDivElement>(null);
   const [epoch, setEpoch] = useState(0);

@@ -4,6 +4,7 @@ import { useProcedure } from './queries';
 
 export interface LiveSession {
   session: string | null;
+  procedure: string | null;
   mode: string | null;
   startedAt: string | null;
   machine: Record<string, unknown> | null;
@@ -21,7 +22,8 @@ const parse = (s: string) => {
 
 // Follows the newest session in the live stream: its machine state, finished steps and latest AI verdict.
 export function useLiveSession(events: LiveEvent[]): LiveSession {
-  const procedure = useProcedure();
+  const procedureId = (events.find((e) => e.event === 'session_start')?.data.procedure as string | undefined) ?? null;
+  const procedure = useProcedure(procedureId);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -31,7 +33,7 @@ export function useLiveSession(events: LiveEvent[]): LiveSession {
   return useMemo(() => {
     const start = events.find((e) => e.event === 'session_start');
     const steps = procedure.data?.steps ?? [];
-    const empty: LiveSession = { session: null, mode: null, startedAt: null, machine: null, done: new Set(), total: steps.length, verdict: null, observes: [], elapsed: null };
+    const empty: LiveSession = { session: null, procedure: procedureId, mode: null, startedAt: null, machine: null, done: new Set(), total: steps.length, verdict: null, observes: [], elapsed: null };
     if (!start) return empty;
     const session = String(start.data.session);
     const mine = events.filter((e) => e.event === 'observe' && e.data.session === session && e.id >= start.id).reverse(); // oldest first
@@ -49,6 +51,7 @@ export function useLiveSession(events: LiveEvent[]): LiveSession {
     const spoken = [...mine].reverse().find((e) => e.data.verdict && e.data.verdict !== 'ok' && e.data.line);
     return {
       session,
+      procedure: procedureId,
       mode: mine[0] ? String(mine[0].data.mode) : null,
       startedAt: start.at,
       machine: last ? ((last.data.machine as Record<string, unknown>) ?? null) : null,
@@ -58,5 +61,5 @@ export function useLiveSession(events: LiveEvent[]): LiveSession {
       observes: mine.slice().reverse(),
       elapsed: Math.max(0, Math.round((now - Date.parse(start.at)) / 1000)),
     };
-  }, [events, procedure.data, now]);
+  }, [events, procedure.data, procedureId, now]);
 }

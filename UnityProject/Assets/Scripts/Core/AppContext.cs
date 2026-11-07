@@ -56,8 +56,24 @@ namespace MrTrainer.Core
             coach.Init(api, machine, frames, head);
             live.Init(api, frames);
 
+            var cnc = new Scenario
+            {
+                id = procedure.id,
+                title = "CNC mill",
+                subtitle = procedure.steps.Count + " steps: start up, set up and run",
+                machineName = "CNC vertical machining center",
+                passportLabel = Config.MachineLabel,
+                procedure = procedure,
+                machine = machine,
+                placer = placer,
+                root = placer.machineRoot.gameObject
+            };
+            var hub = new ScenarioHub(cnc);
+            var template = view.table != null ? view.table.GetComponentInChildren<Renderer>() : null;
+            hub.Add(DrillRig.Create(ui, rig, template != null ? template.sharedMaterial : null));
+
             flow.Init(procedure, machine, highlight, stepCard, modal, toasts, placer,
-                new RemoteCheckpointService(coach), ui, head, coach, banner, api);
+                new RemoteCheckpointService(coach), ui, head, coach, banner, api, hub);
             flow.certPanel = certPanel;
 
             yield return new WaitForSeconds(0.6f);
