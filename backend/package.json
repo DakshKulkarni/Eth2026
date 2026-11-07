@@ -20,6 +20,7 @@
     "smoke:ens-scope": "tsx --env-file-if-exists=.env scripts/smoke-ens-scope.ts",
     "smoke:ens": "tsx --env-file-if-exists=.env scripts/smoke-ens.ts",
     "ens:setup": "tsx --env-file-if-exists=.env scripts/ens-setup.ts",
+    "ens:setup-drill": "tsx --env-file-if-exists=.env scripts/ens-setup-drill.ts",
     "ens:grant-profile": "tsx --env-file-if-exists=.env scripts/ens-grant-profile.ts",
     "proof": "tsx --env-file-if-exists=.env scripts/proof.ts",
     "smoke:world": "tsx scripts/smoke-world.ts",

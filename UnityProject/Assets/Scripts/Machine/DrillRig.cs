@@ -69,7 +69,7 @@ namespace MrTrainer.Machine
                 title = "Drill press",
                 subtitle = "13 steps: set up, clamp and drill a hole",
                 machineName = "Benchtop drill press",
-                passportLabel = null,
+                passportLabel = "drill-01",
                 tips = new[]
                 {
                     "A small machine with real safety rules",

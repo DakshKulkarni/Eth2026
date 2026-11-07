@@ -8,6 +8,7 @@ namespace MrTrainer.Ui
     public class CertificateView
     {
         public string alias;
+        public string machine;
         public string name;
         public bool valid;
         public string reason;
@@ -62,7 +63,7 @@ namespace MrTrainer.Ui
             string who = string.IsNullOrEmpty(v.alias) ? "Certified operator" : v.alias;
             Fit(ui.Text(content, who, ui.T.hero, ui.T.textPrimary, true, TextAlignmentOptions.Center,
                 new Vector2(inner, 96f), new Vector2(0f, 375f)), 40f);
-            ui.Text(content, "Certified operator of the cnc-01 vertical machining center", ui.T.caption,
+            ui.Text(content, "Certified operator of the " + (string.IsNullOrEmpty(v.machine) ? "machine" : v.machine), ui.T.caption,
                 ui.T.textSecondary, false, TextAlignmentOptions.Center, new Vector2(inner, 44f), new Vector2(0f, 302f));
             Fit(ui.Text(content, v.name, ui.T.title - 8f, ui.T.accent, true, TextAlignmentOptions.Center,
                 new Vector2(inner, 64f), new Vector2(0f, 235f)), 28f);

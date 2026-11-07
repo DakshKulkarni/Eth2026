@@ -2,7 +2,7 @@ import { createPublicClient, http, keccak256, parseAbi, toHex, type Address } fr
 import { sepolia } from 'viem/chains';
 import { normalize } from 'viem/ens';
 import { config } from '../config.js';
-import { GUIDE_LABEL, MACHINE_LABEL, PARENT_NAME } from './constants.js';
+import { DRILL_GUIDE_LABEL, DRILL_LABEL, GUIDE_LABEL, MACHINE_LABEL, PARENT_NAME } from './constants.js';
 import { loadDeployment } from './deployment.js';
 
 const client = createPublicClient({ chain: sepolia, transport: http(config.SEPOLIA_RPC_URL) });
@@ -127,4 +127,4 @@ export async function checkCredential(label: string): Promise<CredentialCheck> {
   };
 }
 
-export const KNOWN_LABELS = { machine: MACHINE_LABEL, guide: GUIDE_LABEL };
+export const KNOWN_LABELS = { machine: MACHINE_LABEL, guide: GUIDE_LABEL, drill: DRILL_LABEL, drillGuide: DRILL_GUIDE_LABEL };

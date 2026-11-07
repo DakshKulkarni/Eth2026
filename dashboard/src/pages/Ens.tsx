@@ -23,36 +23,17 @@ function KV({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-export function Ens() {
-  const stream = useEventStream();
-  const certs = useCertificates();
-  const passport = useQuery({ queryKey: ['passport', 'cnc-01'], queryFn: () => api.passport('cnc-01'), refetchInterval: 60_000 });
-  const chain = useQuery({ queryKey: ['chain'], queryFn: api.chain, staleTime: Infinity });
-  const [open, setOpen] = useState<string | null>(null);
+const addr = (a: string) => `https://sepolia.etherscan.io/address/${a}`;
 
-  const list = certs.data?.certificates;
-  const valid = list?.filter((c) => c.valid).length;
-  const gone = list ? list.length - (valid ?? 0) : undefined;
-  const withHuman = list?.filter((c) => c.human).length;
+function PassportCard({ label }: { label: string }) {
+  const passport = useQuery({ queryKey: ['passport', label], queryFn: () => api.passport(label), refetchInterval: 60_000 });
   const p = passport.data;
-  const e = chain.data?.ens;
-  const addr = (a: string) => `https://sepolia.etherscan.io/address/${a}`;
-
   return (
-    <div className="grid gap-5">
-      <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-1 md:grid-cols-4">
-        <Stat i={0} label="Licences" value={list?.length} caption="Issued in recent blocks" />
-        <Stat i={1} label="Valid" value={valid} caption="Readable on ENS right now" />
-        <Stat i={2} label="Revoked or expired" value={gone} caption="No longer valid" />
-        <Stat i={3} label="With human proof" value={withHuman} caption="Carry a World mrt.human record" />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
         <Plate still className="p-5 md:p-6">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-[15px] font-semibold">Machine passport</p>
-              <h2 className="display mt-1.5 break-all text-[20px] font-semibold">{p?.name ?? 'cnc-01.smartician.eth'}</h2>
+              <h2 className="display mt-1.5 break-all text-[20px] font-semibold">{p?.name ?? `${label}.smartician.eth`}</h2>
             </div>
             <span className="label flex items-center gap-2 border px-2 py-1" style={{ borderRadius: 8, color: p?.registered ? 'var(--ok)' : 'var(--warn)', borderColor: p?.registered ? 'var(--ok)' : 'var(--warn)' }}>
               <span className="size-1.5" style={{ background: p?.registered ? 'var(--ok)' : 'var(--warn)' }} />{p ? (p.registered ? 'Registered' : 'Not registered') : 'Reading'}
@@ -72,6 +53,35 @@ export function Ens() {
           )}
           <p className="mt-3 text-[11.5px] text-muted">{p?.readFrom ?? 'Read live from ENS on Sepolia'}</p>
         </Plate>
+  );
+}
+
+export function Ens() {
+  const stream = useEventStream();
+  const certs = useCertificates();
+  const chain = useQuery({ queryKey: ['chain'], queryFn: api.chain, staleTime: Infinity });
+  const [open, setOpen] = useState<string | null>(null);
+
+  const list = certs.data?.certificates;
+  const valid = list?.filter((c) => c.valid).length;
+  const gone = list ? list.length - (valid ?? 0) : undefined;
+  const withHuman = list?.filter((c) => c.human).length;
+  const e = chain.data?.ens;
+
+  return (
+    <div className="grid gap-5">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-1 md:grid-cols-4">
+        <Stat i={0} label="Licences" value={list?.length} caption="Issued in recent blocks" />
+        <Stat i={1} label="Valid" value={valid} caption="Readable on ENS right now" />
+        <Stat i={2} label="Revoked or expired" value={gone} caption="No longer valid" />
+        <Stat i={3} label="With human proof" value={withHuman} caption="Carry a World mrt.human record" />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+        <div className="grid content-start gap-5">
+          <PassportCard label="cnc-01" />
+          <PassportCard label="drill-01" />
+        </div>
 
         <Plate still className="p-5 md:p-6">
           <p className="text-[15px] font-semibold">ENSv2 contracts · Sepolia</p>

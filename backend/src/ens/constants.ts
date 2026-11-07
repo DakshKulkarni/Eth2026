@@ -2,6 +2,8 @@ export const PARENT_LABEL = 'smartician';
 export const PARENT_NAME = `${PARENT_LABEL}.eth`;
 export const MACHINE_LABEL = 'cnc-01';
 export const GUIDE_LABEL = 'guide-cnc';
+export const DRILL_LABEL = 'drill-01';
+export const DRILL_GUIDE_LABEL = 'guide-drill';
 
 export const SEPOLIA = {
   ethRegistry: '0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4',

@@ -580,6 +580,7 @@ namespace MrTrainer.Guidance
             var view = new CertificateView
             {
                 alias = live != null ? live.alias : null,
+                machine = scenario.machineName,
                 name = cert.name,
                 valid = live != null && live.valid,
                 reason = live != null ? live.reason : "not checked",
